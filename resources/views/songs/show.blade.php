@@ -38,15 +38,19 @@
                 <div class="mb-6">
                     <p class="text-white text-lg">
                         by 
-                        <a href="#" class="text-green-500 hover:text-green-400 font-semibold transition-colors">
-                            @if($song->artist)
+                        @if($song->artist)
+                            <a href="{{ route('artists.show', $song->artist->slug) }}" class="text-green-500 hover:text-green-400 font-semibold transition-colors">
                                 {{ $song->artist->StageName }}
-                            @elseif($song->orchestra)
+                            </a>
+                        @elseif($song->orchestra)
+                            <a href="{{ route('orchestre.show', $song->orchestra->slug) }}" class="text-green-500 hover:text-green-400 font-semibold transition-colors">
                                 {{ $song->orchestra->OrchestreName }}
-                            @elseif($song->itorero)
+                            </a>
+                        @elseif($song->itorero)
+                            <a href="{{ route('itorero.show', $song->itorero->slug) }}" class="text-green-500 hover:text-green-400 font-semibold transition-colors">
                                 {{ $song->itorero->ItoreroName }}
-                            @endif
-                        </a>
+                            </a>
+                        @endif
                     </p>
                 </div>
                 @endif
