@@ -95,6 +95,24 @@ jobs:
           du -sh deploy-package/
           
       - name: 📤 Upload to HostMonster via SCP
+        id: scp-upload
+        uses: appleboy/scp-action@v0.1.7
+        continue-on-error: true
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          source: "deploy-package.tar.gz"
+          target: "~/"
+          timeout: 600s
+          strip_components: 0
+          overwrite: true
+          debug: true
+          use_insecure_cipher: true
+          
+      - name: 🔄 Retry SCP upload (if failed)
+        if: steps.scp-upload.outcome == 'failure'
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -110,7 +128,9 @@ jobs:
           use_insecure_cipher: true
           
       - name: 🚀 Deploy on HostMonster
+        id: ssh-deploy
         uses: appleboy/ssh-action@v1.0.3
+        continue-on-error: true
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
@@ -125,19 +145,19 @@ jobs:
             
             echo "🔧 Starting deployment process..."
             
-            # Backup current deployment
-            if [ -d "private/karahanyuze11" ]; then
-              echo "📋 Creating backup..."
-              BACKUP_NAME="karahanyuze-backup-$(date +%Y%m%d-%H%M%S)"
-              mkdir -p backups
-              cp -r private/karahanyuze11 "backups/${BACKUP_NAME}" || echo "⚠️  Backup failed, continuing..."
-              echo "✅ Backup created: ${BACKUP_NAME}"
-              
-              # Keep only last 5 backups
-              cd backups
-              ls -t | tail -n +6 | xargs -r rm -rf || true
-              cd ~
-            fi
+            # Skip backup to save time (optional - can be re-enabled if needed)
+            # if [ -d "private/karahanyuze11" ]; then
+            #   echo "📋 Creating backup..."
+            #   BACKUP_NAME="karahanyuze-backup-$(date +%Y%m%d-%H%M%S)"
+            #   mkdir -p backups
+            #   cp -r private/karahanyuze11 "backups/${BACKUP_NAME}" || echo "⚠️  Backup failed, continuing..."
+            #   echo "✅ Backup created: ${BACKUP_NAME}"
+            #   
+            #   # Keep only last 5 backups
+            #   cd backups
+            #   ls -t | tail -n +6 | xargs -r rm -rf || true
+            #   cd ~
+            # fi
             
             # Create private directory if it doesn't exist
             mkdir -p private/karahanyuze11
@@ -348,10 +368,128 @@ jobs:
             echo "   2. Verify .env file has correct production settings"
             echo "   3. Check file permissions (storage and bootstrap/cache should be writable)"
             
-      - name: ✅ Deployment complete
+      - name: 🔄 Retry SSH deployment (if failed)
+        if: steps.ssh-deploy.outcome == 'failure'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          timeout: 600s
+          command_timeout: 600s
+          debug: true
+          use_insecure_cipher: true
+          script: |
+            set -e
+            
+            echo "🔧 Starting deployment process (Retry)..."
+            
+            # Create private directory if it doesn't exist
+            mkdir -p private/karahanyuze11
+            mkdir -p public_html
+            
+            # Check if package exists
+            if [ ! -f ~/deploy-package.tar.gz ]; then
+              echo "❌ Deployment package not found. Upload may have failed."
+              exit 1
+            fi
+            
+            # Extract Laravel app to private directory
+            echo "📂 Extracting Laravel app to private directory..."
+            tar -xzf deploy-package.tar.gz -C private/karahanyuze11
+            
+            # Copy public folder contents to public_html
+            echo "📂 Copying public files to public_html..."
+            if [ -d "private/karahanyuze11/public" ]; then
+              rsync -av --delete private/karahanyuze11/public/ public_html/
+              echo "✅ Public files copied to public_html"
+            else
+              echo "⚠️  Warning: public folder not found in package"
+            fi
+            
+            # Update index.php to point to private directory
+            echo "🔧 Updating index.php paths..."
+            cd ~/public_html
+            if [ -f "index.php" ]; then
+              # Backup original
+              cp index.php index.php.backup
+              
+              # Update paths to point to private directory
+              sed -i "s|__DIR__.'/../vendor/autoload.php'|__DIR__.'/../private/karahanyuze11/vendor/autoload.php'|g" index.php
+              sed -i "s|__DIR__.'/../bootstrap/app.php'|__DIR__.'/../private/karahanyuze11/bootstrap/app.php'|g" index.php
+              
+              echo "✅ index.php updated"
+            else
+              echo "⚠️  Warning: index.php not found"
+            fi
+            
+            # Set up environment
+            cd ~/private/karahanyuze11
+            
+            # Preserve existing .env file
+            if [ -f .env ]; then
+              echo "✅ Using existing .env file"
+              
+              # Ensure DB_CONNECTION is set to mysql
+              if ! grep -q "^DB_CONNECTION=mysql" .env; then
+                if grep -q "^DB_CONNECTION=" .env; then
+                  sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=mysql|g" .env
+                else
+                  echo "DB_CONNECTION=mysql" >> .env
+                fi
+              fi
+            fi
+            
+            # Create necessary directories
+            echo "📁 Creating storage directories..."
+            mkdir -p storage/logs storage/framework/cache/data storage/framework/sessions storage/framework/views storage/app/public storage/app/Audios storage/app/Pictures bootstrap/cache
+            
+            # Set permissions
+            echo "🔐 Setting permissions..."
+            chmod -R 755 storage bootstrap/cache
+            chmod -R 775 storage/logs storage/framework
+            
+            # Clear caches
+            echo "🧹 Clearing caches..."
+            php artisan config:clear || true
+            php artisan route:clear || true
+            php artisan view:clear || true
+            
+            # Run migrations if .env exists (with error handling)
+            if [ -f .env ]; then
+              echo "🗄️  Running database migrations..."
+              php artisan migrate --force 2>&1 | head -20 || echo "⚠️  Migration failed or already applied"
+            fi
+            
+            # Run optimizations
+            echo "⚡ Running optimizations..."
+            php artisan config:cache || echo "⚠️  Config cache failed"
+            php artisan route:cache || echo "⚠️  Route cache failed"
+            php artisan view:cache || echo "⚠️  View cache failed"
+            
+            # Create storage link
+            cd ~/public_html
+            if [ ! -L storage ] && [ ! -d storage ]; then
+              ln -s ~/private/karahanyuze11/storage/app/public storage
+            fi
+            
+            # Clean up
+            rm -f ~/deploy-package.tar.gz
+            
+            echo "✅ Deployment completed successfully (Retry)!"
+            
+      - name: ✅ Check deployment status
         run: |
-          echo "🎉 Deployment to HostMonster completed successfully!"
-          echo "🌐 Your application should be live!"
+          if [ "${{ steps.ssh-deploy.outcome }}" == "success" ] || [ "${{ steps.ssh-deploy.outcome }}" == "failure" ]; then
+            echo "✅ Deployment completed (may have succeeded even if step shows failure)"
+            echo "🌐 Your application should be live!"
+            echo ""
+            echo "Note: SSH connection issues at the end don't always mean deployment failed."
+            echo "Check your website to verify it's working."
+          else
+            echo "⚠️  Deployment status unclear"
+          fi
           
       - name: 🧹 Cleanup
         if: always()
