@@ -26,13 +26,29 @@ jobs:
           extensions: mbstring, xml, pdo_mysql, gd, zip, curl, fileinfo, bcmath
           tools: composer:v2
           
+      - name: 📦 Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.composer/cache
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+            
       - name: 📦 Install Composer dependencies
         run: |
           composer install --optimize-autoloader --no-dev --prefer-dist --no-interaction --no-progress
           
+      - name: 📦 Cache NPM dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+            
       - name: 📦 Install NPM dependencies
         run: |
-          npm ci
+          npm ci --prefer-offline --no-audit
           
       - name: 🔨 Build assets
         run: |
@@ -78,51 +94,7 @@ jobs:
           echo "📊 Package contents size:"
           du -sh deploy-package/
           
-      - name: 📤 Upload to HostMonster via SCP (Attempt 1)
-        id: scp-1
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          port: ${{ secrets.SSH_PORT || '22' }}
-          source: "deploy-package.tar.gz"
-          target: "~/"
-          timeout: 600s
-          strip_components: 0
-          overwrite: true
-          debug: true
-          use_insecure_cipher: true
-        continue-on-error: true
-        
-      - name: ⏳ Wait before retry
-        if: steps.scp-1.outcome == 'failure'
-        run: sleep 20
-        
-      - name: 📤 Upload to HostMonster via SCP (Attempt 2)
-        if: steps.scp-1.outcome == 'failure'
-        id: scp-2
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          port: ${{ secrets.SSH_PORT || '22' }}
-          source: "deploy-package.tar.gz"
-          target: "~/"
-          timeout: 600s
-          strip_components: 0
-          overwrite: true
-          debug: true
-          use_insecure_cipher: true
-        continue-on-error: true
-        
-      - name: ⏳ Wait before final retry
-        if: steps.scp-2.outcome == 'failure'
-        run: sleep 20
-        
-      - name: 📤 Upload to HostMonster via SCP (Attempt 3)
-        if: steps.scp-2.outcome == 'failure'
+      - name: 📤 Upload to HostMonster via SCP
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -137,10 +109,8 @@ jobs:
           debug: true
           use_insecure_cipher: true
           
-      - name: 🚀 Deploy on HostMonster (Attempt 1)
-        id: ssh-1
+      - name: 🚀 Deploy on HostMonster
         uses: appleboy/ssh-action@v1.0.3
-        continue-on-error: true
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
@@ -318,261 +288,9 @@ jobs:
                 php artisan config:clear || true
               fi
               
-              # Test database connection
+              # Test database connection (skip table count check to save time)
               if php artisan db:show 2>&1 | grep -q "Connection:"; then
                 echo "✅ Database connection successful"
-                
-                # Check if tables exist and have data
-                echo "📊 Checking database tables..."
-                php artisan tinker --execute="try { echo 'Indirimbo: ' . DB::table('Indirimbo')->count() . ' songs\n'; echo 'Abahanzi: ' . DB::table('Abahanzi')->count() . ' artists\n'; echo 'Playlist: ' . DB::table('Playlist')->count() . ' playlists\n'; } catch (Exception \$e) { echo 'Error: ' . \$e->getMessage() . '\n'; }" 2>&1 | head -10
-              else
-                echo "❌ Database connection failed!"
-                echo "   Please check your .env database settings:"
-                echo "   - DB_CONNECTION=mysql (should be set)"
-                echo "   - DB_HOST, DB_PORT, DB_DATABASE"
-                echo "   - DB_USERNAME, DB_PASSWORD"
-                echo "   - Database server must be accessible from this server"
-                echo ""
-                echo "   Current DB_CONNECTION value:"
-                grep "^DB_CONNECTION=" .env || echo "   (not set)"
-              fi
-              
-              # Run migrations
-              echo "🗄️  Running database migrations..."
-              if php artisan migrate --force 2>&1; then
-                echo "✅ Migrations completed successfully"
-              else
-                echo "⚠️  Migration failed or migrations already applied"
-                echo "   This is normal if migrations are already up to date"
-              fi
-            else
-              echo "⚠️  Skipping migrations - .env file not found"
-              echo "   To run migrations manually:"
-              echo "   1. Create/upload .env file to ~/private/karahanyuze11/"
-              echo "   2. Run: cd ~/private/karahanyuze11 && php artisan migrate --force"
-            fi
-            
-            # Run optimizations
-            echo "⚡ Running optimizations..."
-            php artisan config:cache || echo "⚠️  Config cache failed"
-            php artisan route:cache || echo "⚠️  Route cache failed"
-            php artisan view:cache || echo "⚠️  View cache failed"
-            
-            # Create symbolic link from public_html/storage to private storage
-            cd ~/public_html
-            if [ ! -L storage ] && [ ! -d storage ]; then
-              echo "🔗 Creating storage symbolic link..."
-              ln -s ~/private/karahanyuze11/storage/app/public storage
-              echo "✅ Storage link created"
-            elif [ -L storage ]; then
-              echo "✅ Storage link already exists"
-            else
-              echo "⚠️  Storage directory exists as regular folder, not creating link"
-            fi
-            
-            # Clean up
-            rm -f ~/deploy-package.tar.gz
-            
-            echo "✅ Deployment completed successfully!"
-            echo "📂 Laravel app: ~/private/karahanyuze11/"
-            echo "🌐 Public files: ~/public_html/"
-            echo ""
-            echo "⚠️  IMPORTANT REMINDERS:"
-            echo "   1. Ensure storage/app/Audios/ and storage/app/Pictures/ are uploaded separately"
-            echo "   2. Verify .env file has correct production settings"
-            echo "   3. Check file permissions (storage and bootstrap/cache should be writable)"
-            
-      - name: ⏳ Wait before SSH retry
-        if: steps.ssh-1.outcome == 'failure'
-        run: sleep 20
-        
-      - name: 🚀 Deploy on HostMonster (Attempt 2)
-        if: steps.ssh-1.outcome == 'failure'
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          port: ${{ secrets.SSH_PORT || '22' }}
-          timeout: 600s
-          command_timeout: 600s
-          debug: true
-          use_insecure_cipher: true
-          script: |
-            set -e
-            
-            echo "🔧 Starting deployment process (Retry)..."
-            
-            # Backup current deployment
-            if [ -d "private/karahanyuze11" ]; then
-              echo "📋 Creating backup..."
-              BACKUP_NAME="karahanyuze-backup-$(date +%Y%m%d-%H%M%S)"
-              mkdir -p backups
-              cp -r private/karahanyuze11 "backups/${BACKUP_NAME}" || echo "⚠️  Backup failed, continuing..."
-              echo "✅ Backup created: ${BACKUP_NAME}"
-              
-              # Keep only last 5 backups
-              cd backups
-              ls -t | tail -n +6 | xargs -r rm -rf || true
-              cd ~
-            fi
-            
-            # Create private directory if it doesn't exist
-            mkdir -p private/karahanyuze11
-            mkdir -p public_html
-            
-            # Extract Laravel app to private directory
-            echo "📂 Extracting Laravel app to private directory..."
-            tar -xzf deploy-package.tar.gz -C private/karahanyuze11
-            
-            # Copy public folder contents to public_html
-            echo "📂 Copying public files to public_html..."
-            if [ -d "private/karahanyuze11/public" ]; then
-              rsync -av --delete private/karahanyuze11/public/ public_html/
-              echo "✅ Public files copied to public_html"
-            else
-              echo "⚠️  Warning: public folder not found in package"
-            fi
-            
-            # Update index.php to point to private directory
-            echo "🔧 Updating index.php paths..."
-            cd ~/public_html
-            if [ -f "index.php" ]; then
-              # Backup original
-              cp index.php index.php.backup
-              
-              # Update paths to point to private directory
-              sed -i "s|__DIR__.'/../vendor/autoload.php'|__DIR__.'/../private/karahanyuze11/vendor/autoload.php'|g" index.php
-              sed -i "s|__DIR__.'/../bootstrap/app.php'|__DIR__.'/../private/karahanyuze11/bootstrap/app.php'|g" index.php
-              
-              echo "✅ index.php updated"
-            else
-              echo "⚠️  Warning: index.php not found"
-            fi
-            
-            # Set up environment
-            cd ~/private/karahanyuze11
-            
-            # Preserve existing .env file
-            if [ -f .env ]; then
-              echo "✅ Using existing .env file"
-              
-              # Ensure DB_CONNECTION is set to mysql (not sqlite)
-              if ! grep -q "^DB_CONNECTION=" .env; then
-                echo "🔧 Setting DB_CONNECTION to mysql..."
-                echo "" >> .env
-                echo "# Database Connection" >> .env
-                echo "DB_CONNECTION=mysql" >> .env
-                echo "✅ DB_CONNECTION set to mysql"
-              else
-                DB_CONNECTION_VALUE=$(grep "^DB_CONNECTION=" .env | cut -d '=' -f2 | tr -d ' ')
-                if [ "$DB_CONNECTION_VALUE" != "mysql" ]; then
-                  echo "⚠️  DB_CONNECTION is set to $DB_CONNECTION_VALUE (should be mysql)"
-                  echo "🔧 Updating DB_CONNECTION to mysql..."
-                  sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=mysql|g" .env
-                  echo "✅ DB_CONNECTION updated to mysql"
-                else
-                  echo "✅ DB_CONNECTION is correctly set to mysql"
-                fi
-              fi
-              
-              # Check if APP_KEY is missing or empty, if so generate it
-              APP_KEY_VALUE=$(grep "^APP_KEY=" .env 2>/dev/null | cut -d '=' -f2- | tr -d ' ')
-              if [ -z "$APP_KEY_VALUE" ] || [ "$APP_KEY_VALUE" = "" ]; then
-                echo "🔑 Generating application key..."
-                php artisan key:generate --force
-                echo "✅ Application key generated"
-              else
-                echo "✅ APP_KEY already exists in .env"
-              fi
-              
-              # Check if APP_CIPHER is missing or incorrect, set it to aes-256-gcm (default for Laravel 12)
-              if ! grep -q "^APP_CIPHER=" .env; then
-                echo "🔐 Setting APP_CIPHER to aes-256-gcm..."
-                echo "" >> .env
-                echo "# Application Cipher" >> .env
-                echo "APP_CIPHER=aes-256-gcm" >> .env
-                echo "✅ APP_CIPHER set"
-              else
-                # Check if cipher is supported
-                APP_CIPHER_VALUE=$(grep "^APP_CIPHER=" .env | cut -d '=' -f2 | tr -d ' ')
-                if [ "$APP_CIPHER_VALUE" != "aes-128-cbc" ] && [ "$APP_CIPHER_VALUE" != "aes-256-cbc" ] && [ "$APP_CIPHER_VALUE" != "aes-128-gcm" ] && [ "$APP_CIPHER_VALUE" != "aes-256-gcm" ]; then
-                  echo "⚠️  APP_CIPHER is set to unsupported value: $APP_CIPHER_VALUE"
-                  echo "🔐 Updating APP_CIPHER to aes-256-gcm..."
-                  sed -i "s|^APP_CIPHER=.*|APP_CIPHER=aes-256-gcm|g" .env
-                  echo "✅ APP_CIPHER updated to aes-256-gcm"
-                else
-                  echo "✅ APP_CIPHER is correctly set to $APP_CIPHER_VALUE"
-                fi
-              fi
-            else
-              if [ -f .env.example ]; then
-                echo "📝 Copying .env.example to .env"
-                cp .env.example .env
-                echo "🔑 Generating application key..."
-                php artisan key:generate --force
-                echo "🔐 Setting APP_CIPHER to aes-256-gcm..."
-                if ! grep -q "^APP_CIPHER=" .env; then
-                  echo "" >> .env
-                  echo "# Application Cipher" >> .env
-                  echo "APP_CIPHER=aes-256-gcm" >> .env
-                fi
-                echo "⚠️  IMPORTANT: Please update .env file with your production settings!"
-              else
-                echo "⚠️  .env file not found! Please create one manually."
-              fi
-            fi
-            
-            # Create necessary directories
-            echo "📁 Creating storage directories..."
-            mkdir -p storage/logs
-            mkdir -p storage/framework/cache/data
-            mkdir -p storage/framework/sessions
-            mkdir -p storage/framework/views
-            mkdir -p storage/app/public
-            mkdir -p storage/app/Audios
-            mkdir -p storage/app/Pictures
-            mkdir -p bootstrap/cache
-            
-            # Set permissions
-            echo "🔐 Setting permissions..."
-            chmod -R 755 storage
-            chmod -R 755 bootstrap/cache
-            chmod -R 775 storage/logs
-            chmod -R 775 storage/framework
-            
-            # Clear all caches first (IMPORTANT: Must clear config cache before checking DB)
-            echo "🧹 Clearing caches..."
-            php artisan config:clear || true
-            php artisan route:clear || true
-            php artisan view:clear || true
-            
-            # Test database connection and run migrations (if .env exists)
-            if [ -f .env ]; then
-              echo "🔍 Testing database connection..."
-              
-              # Verify DB_CONNECTION is set correctly in .env
-              if grep -q "^DB_CONNECTION=mysql" .env; then
-                echo "✅ DB_CONNECTION is set to mysql in .env"
-              else
-                echo "⚠️  DB_CONNECTION is not set to mysql, fixing..."
-                if grep -q "^DB_CONNECTION=" .env; then
-                  sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=mysql|g" .env
-                else
-                  echo "DB_CONNECTION=mysql" >> .env
-                fi
-                echo "✅ DB_CONNECTION updated to mysql"
-                # Clear config cache again after changing .env
-                php artisan config:clear || true
-              fi
-              
-              # Test database connection
-              if php artisan db:show 2>&1 | grep -q "Connection:"; then
-                echo "✅ Database connection successful"
-                
-                # Check if tables exist and have data
-                echo "📊 Checking database tables..."
-                php artisan tinker --execute="try { echo 'Indirimbo: ' . DB::table('Indirimbo')->count() . ' songs\n'; echo 'Abahanzi: ' . DB::table('Abahanzi')->count() . ' artists\n'; echo 'Playlist: ' . DB::table('Playlist')->count() . ' playlists\n'; } catch (Exception \$e) { echo 'Error: ' . \$e->getMessage() . '\n'; }" 2>&1 | head -10
               else
                 echo "❌ Database connection failed!"
                 echo "   Please check your .env database settings:"
