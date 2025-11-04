@@ -15,6 +15,9 @@ use Illuminate\Support\Facades\Mail;
 class VerifyEmailNotification extends Notification
 {
     use Queueable;
+    
+    // Force synchronous sending (not queued)
+    public $shouldQueue = false;
 
     /**
      * Get the notification's delivery channels.
@@ -41,6 +44,12 @@ class VerifyEmailNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         $verificationUrl = $this->verificationUrl($notifiable);
+        
+        Log::info('Building verification email', [
+            'user_id' => $notifiable->UserID ?? null,
+            'email' => $notifiable->getEmailForVerification(),
+            'verification_url' => $verificationUrl,
+        ]);
 
         return (new MailMessage)
             ->subject('Verify Your Email Address - Karahanyuze')

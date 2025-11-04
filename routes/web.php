@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\SongController;
@@ -170,14 +171,42 @@ Route::post('/email/verification-notification', function (Request $request) {
             'mail_from_name' => config('mail.from.name'),
         ]);
         
-        // Send the notification
-        $user->sendEmailVerificationNotification();
-        
-        Log::info('Email verification notification sent (authenticated)', [
-            'user_id' => $user->UserID,
-            'email' => $user->Email,
-            'mailer' => config('mail.default')
-        ]);
+        // Actually send the email and catch any errors
+        try {
+            $verificationUrl = URL::temporarySignedRoute(
+                'verification.verify',
+                \Illuminate\Support\Carbon::now()->addMinutes(60),
+                [
+                    'id' => $user->getKey(),
+                    'hash' => sha1($user->getEmailForVerification()),
+                ]
+            );
+            
+            Mail::send([], [], function ($message) use ($user, $verificationUrl) {
+                $message->to($user->Email)
+                    ->subject('Verify Your Email Address - Karahanyuze')
+                    ->html(view('emails.verify', [
+                        'user' => $user,
+                        'verificationUrl' => $verificationUrl
+                    ])->render());
+            });
+            
+            Log::info('Email verification notification sent (authenticated)', [
+                'user_id' => $user->UserID,
+                'email' => $user->Email,
+                'mailer' => config('mail.default'),
+                'sent_synchronously' => true
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Email send failed (authenticated)', [
+                'user_id' => $user->UserID,
+                'email' => $user->Email,
+                'error' => $e->getMessage(),
+                'class' => get_class($e),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->withErrors(['email' => 'Failed to send email: ' . $e->getMessage()]);
+        }
         
         return back()->with('status', 'verification-link-sent');
     } catch (\Swift_TransportException | \Swift_RfcComplianceException $e) {
@@ -222,13 +251,43 @@ Route::post('/email/resend-verification', function (Request $request) {
                 'mail_from_address' => config('mail.from.address'),
             ]);
             
-            $user->sendEmailVerificationNotification();
+            // Actually send the email and catch any errors
+            try {
+                Mail::send([], [], function ($message) use ($user) {
+                    $verificationUrl = URL::temporarySignedRoute(
+                        'verification.verify',
+                        \Illuminate\Support\Carbon::now()->addMinutes(60),
+                        [
+                            'id' => $user->getKey(),
+                            'hash' => sha1($user->getEmailForVerification()),
+                        ]
+                    );
+                    
+                    $message->to($user->Email)
+                        ->subject('Verify Your Email Address - Karahanyuze')
+                        ->html(view('emails.verify', [
+                            'user' => $user,
+                            'verificationUrl' => $verificationUrl
+                        ])->render());
+                });
+                
+                Log::info('Email verification notification sent (unauthenticated)', [
+                    'user_id' => $user->UserID,
+                    'email' => $user->Email,
+                    'mailer' => config('mail.default'),
+                    'sent_synchronously' => true
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Email send failed (unauthenticated)', [
+                    'user_id' => $user->UserID,
+                    'email' => $user->Email,
+                    'error' => $e->getMessage(),
+                    'class' => get_class($e),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                throw $e;
+            }
             
-            Log::info('Email verification notification sent (unauthenticated)', [
-                'user_id' => $user->UserID,
-                'email' => $user->Email,
-                'mailer' => config('mail.default')
-            ]);
             return back()->with('status', 'verification-link-sent');
         } catch (\Swift_TransportException | \Swift_RfcComplianceException $e) {
             Log::error('SMTP Transport error when sending verification email', [
