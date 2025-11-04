@@ -49,6 +49,7 @@ jobs:
             --exclude='storage/framework/views/*' \
             --exclude='storage/app/Audios' \
             --exclude='storage/app/Pictures' \
+            --exclude='storage/app/public' \
             --exclude='.env' \
             --exclude='.env.example' \
             --exclude='deploy-package' \
@@ -65,9 +66,12 @@ jobs:
             --exclude='import-database.sh' \
             . deploy-package/
           
-          # Create tarball
+          # Create tarball and show size
           tar -czf deploy-package.tar.gz -C deploy-package .
+          echo "📦 Deployment package size:"
           ls -lh deploy-package.tar.gz
+          echo "📊 Package contents size:"
+          du -sh deploy-package/
           
       - name: 📤 Upload to HostMonster via SCP
         uses: appleboy/scp-action@v0.1.7
@@ -78,7 +82,7 @@ jobs:
           port: ${{ secrets.SSH_PORT || '22' }}
           source: "deploy-package.tar.gz"
           target: "~/"
-          timeout: 600s
+          timeout: 300s
           strip_components: 0
           overwrite: true
           debug: true
