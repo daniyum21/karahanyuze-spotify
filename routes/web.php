@@ -173,17 +173,6 @@ Route::post('/email/verification-notification', function (Request $request) {
         // Send the notification
         $user->sendEmailVerificationNotification();
         
-        // Try to flush the mailer to ensure it's actually sent
-        try {
-            $swiftMailer = Mail::getSwiftMailer();
-            if ($swiftMailer && method_exists($swiftMailer->getTransport(), 'stop')) {
-                $swiftMailer->getTransport()->stop();
-            }
-        } catch (\Exception $e) {
-            // Ignore if transport doesn't support stop()
-            Log::warning('Could not stop mail transport', ['error' => $e->getMessage()]);
-        }
-        
         Log::info('Email verification notification sent (authenticated)', [
             'user_id' => $user->UserID,
             'email' => $user->Email,
@@ -234,17 +223,6 @@ Route::post('/email/resend-verification', function (Request $request) {
             ]);
             
             $user->sendEmailVerificationNotification();
-            
-            // Try to flush the mailer to ensure it's actually sent
-            try {
-                $swiftMailer = Mail::getSwiftMailer();
-                if ($swiftMailer && method_exists($swiftMailer->getTransport(), 'stop')) {
-                    $swiftMailer->getTransport()->stop();
-                }
-            } catch (\Exception $e) {
-                // Ignore if transport doesn't support stop()
-                Log::warning('Could not stop mail transport', ['error' => $e->getMessage()]);
-            }
             
             Log::info('Email verification notification sent (unauthenticated)', [
                 'user_id' => $user->UserID,

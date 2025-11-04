@@ -86,17 +86,6 @@ class RegisterController extends Controller
             
             $user->sendEmailVerificationNotification();
             
-            // Try to flush the mailer to ensure it's actually sent
-            try {
-                $swiftMailer = \Illuminate\Support\Facades\Mail::getSwiftMailer();
-                if ($swiftMailer && method_exists($swiftMailer->getTransport(), 'stop')) {
-                    $swiftMailer->getTransport()->stop();
-                }
-            } catch (\Exception $e) {
-                // Ignore if transport doesn't support stop()
-                Log::warning('Could not stop mail transport', ['error' => $e->getMessage()]);
-            }
-            
             \Log::info('Email verification notification sent', [
                 'user_id' => $user->UserID,
                 'email' => $user->Email,
