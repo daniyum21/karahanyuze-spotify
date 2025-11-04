@@ -156,8 +156,8 @@ jobs:
             if [ -f .env ]; then
               echo "✅ Using existing .env file"
               
-              # Check if APP_KEY is set, if not generate it
-              if ! grep -q "^APP_KEY=" .env || grep -q "^APP_KEY=$" .env || grep -q "^APP_KEY=base64:" .env; then
+              # Check if APP_KEY is missing or empty, if so generate it
+              if ! grep -q "^APP_KEY=" .env || grep -q "^APP_KEY=$" .env; then
                 echo "🔑 Generating application key..."
                 php artisan key:generate --force
                 echo "✅ Application key generated"
