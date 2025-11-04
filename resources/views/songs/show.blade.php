@@ -176,8 +176,8 @@
             <h2 class="text-2xl font-bold text-white mb-6">Lyrics</h2>
             @if($song->Lyrics)
             <div class="max-h-96 overflow-y-auto pr-4">
-                <div class="text-zinc-300 whitespace-pre-wrap leading-relaxed text-lg">
-                    {!! nl2br(e($song->Lyrics)) !!}
+                <div class="text-zinc-300 leading-relaxed text-lg">
+                    {!! strip_tags($song->Lyrics, '<br><p><div><span><strong><em><b><i><u>') !!}
                 </div>
             </div>
             @else
@@ -326,12 +326,63 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json'
             },
-            credentials: 'same-origin'
+            credentials: 'same-origin',
+            redirect: 'manual' // Don't follow redirects automatically
         })
-        .then(response => response.json())
+        .then(async response => {
+            // Handle redirects (302, 301, etc.)
+            if (response.type === 'opaqueredirect' || response.status === 302 || response.status === 301) {
+                alert('Please log in to favorite items.');
+                window.location.href = '{{ route("login") }}';
+                return null;
+            }
+            
+            // Handle authentication errors
+            if (response.status === 401 || response.status === 403) {
+                let message = 'Please log in to favorite items.';
+                try {
+                    const errorData = await response.json();
+                    if (errorData.message) {
+                        message = errorData.message;
+                    }
+                } catch (e) {
+                    // Ignore JSON parse errors
+                }
+                alert(message);
+                window.location.href = '{{ route("login") }}';
+                return null;
+            }
+            
+            // Check if response is JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                // If not JSON, likely a redirect or HTML error page
+                alert('Please log in to favorite items.');
+                window.location.href = '{{ route("login") }}';
+                return null;
+            }
+            
+            if (!response.ok) {
+                // Try to get error message from response
+                try {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || errorData.error || 'An error occurred');
+                } catch (e) {
+                    if (e.message && e.message !== 'Unexpected token < in JSON at position 0') {
+                        throw e;
+                    }
+                    throw new Error('An error occurred. Please try again.');
+                }
+            }
+            
+            return response.json();
+        })
         .then(data => {
+            if (!data) return; // Already handled redirect
+            
             if (data.success) {
                 isLiked = data.isFavorited;
                 
@@ -344,11 +395,20 @@
                     likeBtn.classList.add('bg-zinc-800', 'hover:bg-zinc-700');
                     svg.setAttribute('fill', 'none');
                 }
+            } else if (data.error) {
+                alert(data.message || data.error || 'An error occurred. Please try again.');
             }
         })
         .catch(error => {
             console.error('Error toggling favorite:', error);
-            alert('An error occurred. Please try again.');
+            // Show user-friendly error message
+            const message = error.message || 'An error occurred. Please try again.';
+            if (message.includes('log in') || message.includes('Unauthorized') || message.includes('login')) {
+                alert(message);
+                window.location.href = '{{ route("login") }}';
+            } else {
+                alert(message);
+            }
         });
     }
 

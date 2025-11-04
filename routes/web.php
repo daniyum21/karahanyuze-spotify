@@ -164,9 +164,13 @@ Route::post('/email/resend-verification', function (Request $request) {
     return back()->withErrors(['email' => 'This email is already verified or does not exist.']);
 })->middleware('throttle:6,1')->name('verification.resend');
 
-// User Dashboard Routes (authenticated and verified users)
+// User Dashboard Routes (authenticated and verified users only)
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [UserDashboardController::class, 'index'])->name('user.dashboard');
+});
+
+// Favorites routes (authenticated users only - no verification required)
+Route::middleware(['auth'])->group(function () {
     // Legacy route for songs (backward compatibility)
     Route::post('/favorites/{songId}/toggle', function ($songId) {
         return app(\App\Http\Controllers\UserDashboardController::class)->toggleFavorite(request(), 'song', $songId);

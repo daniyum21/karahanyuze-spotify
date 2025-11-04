@@ -223,21 +223,29 @@
                 const freshPlayer = document.getElementById('bottom-audio-player');
                 if (freshPlayer) {
                     freshPlayer.src = song.audioUrl;
+                    freshPlayer.currentTime = 0; // Reset to beginning
                     freshPlayer.load();
                     
-                    // Play the song
-                    freshPlayer.play().catch(function(error) {
-                        console.log('Auto-play prevented (browser policy):', error);
-                    });
+                    // Wait for audio to be ready before playing
+                    freshPlayer.addEventListener('canplay', function playWhenReady() {
+                        freshPlayer.play().catch(function(error) {
+                            console.log('Auto-play prevented (browser policy):', error);
+                        });
+                        freshPlayer.removeEventListener('canplay', playWhenReady);
+                    }, { once: true });
                 }
             } else {
                 playerAudio.src = song.audioUrl;
+                playerAudio.currentTime = 0; // Reset to beginning
                 playerAudio.load();
                 
-                // Play the song
-                playerAudio.play().catch(function(error) {
-                    console.log('Auto-play prevented (browser policy):', error);
-                });
+                // Wait for audio to be ready before playing
+                playerAudio.addEventListener('canplay', function playWhenReady() {
+                    playerAudio.play().catch(function(error) {
+                        console.log('Auto-play prevented (browser policy):', error);
+                    });
+                    playerAudio.removeEventListener('canplay', playWhenReady);
+                }, { once: true });
             }
         }
     };
@@ -256,6 +264,7 @@
 
     function toggleFavorite() {
         @guest
+        // Redirect to login if not authenticated
         window.location.href = '{{ route("login") }}';
         return;
         @endguest
@@ -269,12 +278,63 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json'
             },
-            credentials: 'same-origin'
+            credentials: 'same-origin',
+            redirect: 'manual' // Don't follow redirects automatically
         })
-        .then(response => response.json())
+        .then(async response => {
+            // Handle redirects (302, 301, etc.)
+            if (response.type === 'opaqueredirect' || response.status === 302 || response.status === 301) {
+                alert('Please log in to favorite items.');
+                window.location.href = '{{ route("login") }}';
+                return null;
+            }
+            
+            // Handle authentication errors
+            if (response.status === 401 || response.status === 403) {
+                let message = 'Please log in to favorite items.';
+                try {
+                    const errorData = await response.json();
+                    if (errorData.message) {
+                        message = errorData.message;
+                    }
+                } catch (e) {
+                    // Ignore JSON parse errors
+                }
+                alert(message);
+                window.location.href = '{{ route("login") }}';
+                return null;
+            }
+            
+            // Check if response is JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                // If not JSON, likely a redirect or HTML error page
+                alert('Please log in to favorite items.');
+                window.location.href = '{{ route("login") }}';
+                return null;
+            }
+            
+            if (!response.ok) {
+                // Try to get error message from response
+                try {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || errorData.error || 'An error occurred');
+                } catch (e) {
+                    if (e.message && e.message !== 'Unexpected token < in JSON at position 0') {
+                        throw e;
+                    }
+                    throw new Error('An error occurred. Please try again.');
+                }
+            }
+            
+            return response.json();
+        })
         .then(data => {
+            if (!data) return; // Already handled redirect
+            
             if (data.success) {
                 const isFavorited = data.isFavorited;
                 
@@ -289,11 +349,20 @@
                     svg.setAttribute('fill', 'none');
                     favoriteBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg> Favorite';
                 }
+            } else if (data.error) {
+                alert(data.message || data.error || 'An error occurred. Please try again.');
             }
         })
         .catch(error => {
             console.error('Error toggling favorite:', error);
-            alert('An error occurred. Please try again.');
+            // Show user-friendly error message
+            const message = error.message || 'An error occurred. Please try again.';
+            if (message.includes('log in') || message.includes('Unauthorized') || message.includes('login')) {
+                alert(message);
+                window.location.href = '{{ route("login") }}';
+            } else {
+                alert(message);
+            }
         });
     }
 

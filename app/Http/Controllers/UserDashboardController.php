@@ -95,7 +95,16 @@ class UserDashboardController extends Controller
         $user = Auth::user();
         
         if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            return response()->json([
+                'error' => 'Unauthorized',
+                'message' => 'Please log in to favorite items.'
+            ], 401);
+        }
+        
+        // Check if user needs email verification (optional - we allow favoriting even if not verified)
+        // But we can provide a helpful message
+        if (!$user->hasVerifiedEmail() && !$user->isAdmin()) {
+            // Still allow favoriting, but could add a note in the response if needed
         }
 
         // Validate type
