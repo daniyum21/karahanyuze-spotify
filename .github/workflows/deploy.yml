@@ -191,6 +191,12 @@ jobs:
                 cp .env.example .env
                 echo "🔑 Generating application key..."
                 php artisan key:generate --force
+                echo "🔐 Setting APP_CIPHER to aes-256-gcm..."
+                if ! grep -q "^APP_CIPHER=" .env; then
+                  echo "" >> .env
+                  echo "# Application Cipher" >> .env
+                  echo "APP_CIPHER=aes-256-gcm" >> .env
+                fi
                 echo "⚠️  IMPORTANT: Please update .env file with your production settings!"
               else
                 echo "⚠️  .env file not found! Please create one manually."
