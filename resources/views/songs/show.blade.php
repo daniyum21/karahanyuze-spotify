@@ -76,7 +76,7 @@
                     @php
                         $isFavorited = false;
                         if (Auth::check()) {
-                            $isFavorited = Auth::user()->favoriteSongs()->where('IndirimboID', $song->IndirimboID)->exists();
+                            $isFavorited = Auth::user()->favoriteSongs()->where('Favorites.IndirimboID', $song->IndirimboID)->exists();
                         }
                     @endphp
                     <button 
