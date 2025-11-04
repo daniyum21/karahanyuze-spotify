@@ -238,6 +238,21 @@ jobs:
             if [ -f .env ]; then
               echo "🔍 Testing database connection..."
               
+              # Test database connection
+              if php artisan db:show 2>&1 | grep -q "Connection:"; then
+                echo "✅ Database connection successful"
+                
+                # Check if tables exist and have data
+                echo "📊 Checking database tables..."
+                php artisan tinker --execute="try { echo 'Indirimbo: ' . DB::table('Indirimbo')->count() . ' songs\n'; echo 'Abahanzi: ' . DB::table('Abahanzi')->count() . ' artists\n'; echo 'Playlist: ' . DB::table('Playlist')->count() . ' playlists\n'; } catch (Exception \$e) { echo 'Error: ' . \$e->getMessage() . '\n'; }" 2>&1 | head -10
+              else
+                echo "❌ Database connection failed!"
+                echo "   Please check your .env database settings:"
+                echo "   - DB_HOST, DB_PORT, DB_DATABASE"
+                echo "   - DB_USERNAME, DB_PASSWORD"
+                echo "   - Database server must be accessible from this server"
+              fi
+              
               # Run migrations
               echo "🗄️  Running database migrations..."
               if php artisan migrate --force 2>&1; then
