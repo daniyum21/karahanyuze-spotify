@@ -78,7 +78,7 @@ jobs:
           port: ${{ secrets.SSH_PORT || '22' }}
           source: "deploy-package.tar.gz"
           target: "~/"
-          timeout: 300s
+          timeout: 600s
           strip_components: 0
           overwrite: true
           debug: true
