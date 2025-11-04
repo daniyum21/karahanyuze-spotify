@@ -14,22 +14,73 @@
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
         
-        // Load GA script with error handling
+        // Flag to track if GA is ready
+        var gaLoaded = false;
+        var gaLoadTimeout = null;
+        
+        // Load GA script with error handling and timeout
         (function() {
             var script = document.createElement('script');
             script.async = true;
             script.src = 'https://www.googletagmanager.com/gtag/js?id={{ config('services.google_analytics.id') }}';
+            
+            // Set a timeout for loading (5 seconds)
+            gaLoadTimeout = setTimeout(function() {
+                if (!gaLoaded) {
+                    console.warn('Google Analytics script load timeout');
+                    // Disable GA to prevent future calls
+                    window.gtag = function() {
+                        // Silently ignore GA calls if it fails to load
+                        return;
+                    };
+                }
+            }, 5000);
+            
             script.onerror = function() {
                 console.warn('Google Analytics script failed to load');
+                clearTimeout(gaLoadTimeout);
+                // Disable GA to prevent future calls
+                window.gtag = function() {
+                    // Silently ignore GA calls if it fails to load
+                    return;
+                };
             };
+            
             script.onload = function() {
-                gtag('config', '{{ config('services.google_analytics.id') }}', {
-                    'send_page_view': true,
-                    'transport_type': 'beacon',
-                    'anonymize_ip': true
-                });
+                gaLoaded = true;
+                clearTimeout(gaLoadTimeout);
+                try {
+                    gtag('config', '{{ config('services.google_analytics.id') }}', {
+                        'send_page_view': true,
+                        'transport_type': 'beacon',
+                        'anonymize_ip': true,
+                        'page_path': window.location.pathname + window.location.search
+                    });
+                } catch (e) {
+                    console.warn('Google Analytics configuration failed:', e);
+                    // Disable GA if configuration fails
+                    window.gtag = function() {
+                        return;
+                    };
+                }
             };
+            
             document.head.appendChild(script);
+        })();
+        
+        // Wrap gtag calls to handle errors gracefully
+        (function() {
+            var originalGtag = window.gtag;
+            window.gtag = function() {
+                try {
+                    if (typeof originalGtag === 'function') {
+                        originalGtag.apply(this, arguments);
+                    }
+                } catch (e) {
+                    // Silently ignore GA errors to prevent blocking the page
+                    console.warn('Google Analytics error (ignored):', e);
+                }
+            };
         })();
     </script>
     @endif

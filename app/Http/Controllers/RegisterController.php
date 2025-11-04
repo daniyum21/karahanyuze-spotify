@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class RegisterController extends Controller
@@ -72,17 +73,50 @@ class RegisterController extends Controller
 
         // Send email verification notification (only for regular users, admins don't need it)
         try {
+            // Log SMTP configuration
+            \Log::info('Attempting to send email verification notification', [
+                'user_id' => $user->UserID,
+                'email' => $user->Email,
+                'mailer' => config('mail.default'),
+                'mail_host' => config('mail.mailers.smtp.host'),
+                'mail_port' => config('mail.mailers.smtp.port'),
+                'mail_encryption' => config('mail.mailers.smtp.encryption'),
+                'mail_from_address' => config('mail.from.address'),
+            ]);
+            
             $user->sendEmailVerificationNotification();
+            
+            // Try to flush the mailer to ensure it's actually sent
+            try {
+                $swiftMailer = \Illuminate\Support\Facades\Mail::getSwiftMailer();
+                if ($swiftMailer && method_exists($swiftMailer->getTransport(), 'stop')) {
+                    $swiftMailer->getTransport()->stop();
+                }
+            } catch (\Exception $e) {
+                // Ignore if transport doesn't support stop()
+                Log::warning('Could not stop mail transport', ['error' => $e->getMessage()]);
+            }
+            
             \Log::info('Email verification notification sent', [
                 'user_id' => $user->UserID,
                 'email' => $user->Email,
                 'mailer' => config('mail.default')
             ]);
+        } catch (\Swift_TransportException | \Swift_RfcComplianceException $e) {
+            \Log::error('SMTP Transport error when sending verification email', [
+                'user_id' => $user->UserID,
+                'email' => $user->Email,
+                'error' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            // Continue anyway - user can resend later
         } catch (\Exception $e) {
             \Log::error('Failed to send email verification notification', [
                 'user_id' => $user->UserID,
                 'email' => $user->Email,
                 'error' => $e->getMessage(),
+                'class' => get_class($e),
                 'trace' => $e->getTraceAsString()
             ]);
             // Continue anyway - user can resend later

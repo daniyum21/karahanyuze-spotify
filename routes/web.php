@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\SongController;
@@ -55,24 +56,61 @@ Route::get('/test-email', function () {
     try {
         $testEmail = request('email', config('mail.from.address'));
         
-        \Illuminate\Support\Facades\Mail::raw('This is a test email from Karahanyuze. If you receive this, your email configuration is working correctly!', function ($message) use ($testEmail) {
-            $message->to($testEmail)
-                    ->subject('Test Email from Karahanyuze');
-        });
+        // Test SMTP connection first
+        $transport = new \Swift_SmtpTransport(
+            $smtpConfig['host'],
+            $smtpConfig['port'],
+            $smtpConfig['encryption'] ?? 'tls'
+        );
+        $transport->setUsername($smtpConfig['username']);
+        $transport->setPassword($smtpConfig['password']);
+        $transport->setTimeout(10);
+        
+        $connectionTest = 'Not tested';
+        try {
+            $transport->start();
+            $connectionTest = 'Connected successfully';
+            $transport->stop();
+        } catch (\Exception $e) {
+            $connectionTest = 'Connection failed: ' . $e->getMessage();
+        }
+        
+        // Now try to send the email
+        $mailer = new \Swift_Mailer($transport);
+        
+        $message = (new \Swift_Message('Test Email from Karahanyuze'))
+            ->setFrom(config('mail.from.address'), config('mail.from.name'))
+            ->setTo($testEmail)
+            ->setBody('This is a test email from Karahanyuze. If you receive this, your email configuration is working correctly!');
+        
+        $result = $mailer->send($message);
+        
+        // Stop the transport
+        try {
+            $transport->stop();
+        } catch (\Exception $e) {
+            // Ignore
+        }
         
         Log::info('Test email sent successfully', [
             'to' => $testEmail,
-            'mailer' => $mailer
+            'mailer' => $mailer,
+            'connection_test' => $connectionTest,
+            'emails_sent' => $result
         ]);
         
         return response()->json([
             'success' => true,
             'message' => 'Test email sent successfully to ' . $testEmail,
+            'connection_test' => $connectionTest,
+            'emails_sent' => $result,
             'config' => $info
         ]);
     } catch (\Exception $e) {
         Log::error('Test email failed', [
             'error' => $e->getMessage(),
+            'class' => get_class($e),
+            'code' => method_exists($e, 'getCode') ? $e->getCode() : null,
             'trace' => $e->getTraceAsString(),
             'config' => $info
         ]);
@@ -80,10 +118,11 @@ Route::get('/test-email', function () {
         return response()->json([
             'error' => 'Failed to send test email',
             'message' => $e->getMessage(),
+            'class' => get_class($e),
             'config' => $info
         ], 500);
     }
-})->name('test.email');
+})->middleware('auth')->name('test.email');
 
 // Authentication Routes
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
@@ -118,19 +157,58 @@ Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $requ
 Route::post('/email/verification-notification', function (Request $request) {
     try {
         $user = $request->user();
+        
+        // Log SMTP configuration (without sensitive data)
+        Log::info('Attempting to send verification email', [
+            'user_id' => $user->UserID,
+            'email' => $user->Email,
+            'mailer' => config('mail.default'),
+            'mail_host' => config('mail.mailers.smtp.host'),
+            'mail_port' => config('mail.mailers.smtp.port'),
+            'mail_encryption' => config('mail.mailers.smtp.encryption'),
+            'mail_from_address' => config('mail.from.address'),
+            'mail_from_name' => config('mail.from.name'),
+        ]);
+        
+        // Send the notification
         $user->sendEmailVerificationNotification();
-        Log::info('Email verification resend successful (authenticated)', [
+        
+        // Try to flush the mailer to ensure it's actually sent
+        try {
+            $swiftMailer = Mail::getSwiftMailer();
+            if ($swiftMailer && method_exists($swiftMailer->getTransport(), 'stop')) {
+                $swiftMailer->getTransport()->stop();
+            }
+        } catch (\Exception $e) {
+            // Ignore if transport doesn't support stop()
+            Log::warning('Could not stop mail transport', ['error' => $e->getMessage()]);
+        }
+        
+        Log::info('Email verification notification sent (authenticated)', [
             'user_id' => $user->UserID,
             'email' => $user->Email,
             'mailer' => config('mail.default')
         ]);
+        
         return back()->with('status', 'verification-link-sent');
+    } catch (\Swift_TransportException | \Swift_RfcComplianceException $e) {
+        Log::error('SMTP Transport error when sending verification email', [
+            'user_id' => $request->user()->UserID ?? null,
+            'email' => $request->user()->Email ?? null,
+            'error' => $e->getMessage(),
+            'code' => $e->getCode(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        return back()->withErrors(['email' => 'SMTP connection error: ' . $e->getMessage()]);
     } catch (\Exception $e) {
         Log::error('Failed to resend email verification (authenticated)', [
             'user_id' => $request->user()->UserID ?? null,
-            'error' => $e->getMessage()
+            'email' => $request->user()->Email ?? null,
+            'error' => $e->getMessage(),
+            'class' => get_class($e),
+            'trace' => $e->getTraceAsString()
         ]);
-        return back()->withErrors(['email' => 'Failed to send email. Please try again later or contact support.']);
+        return back()->withErrors(['email' => 'Failed to send email: ' . $e->getMessage()]);
     }
 })->middleware(['auth', 'throttle:6,1'])->name('verification.send');
 
@@ -144,20 +222,54 @@ Route::post('/email/resend-verification', function (Request $request) {
     
     if ($user && !$user->hasVerifiedEmail()) {
         try {
+            // Log SMTP configuration
+            Log::info('Attempting to send verification email (unauthenticated)', [
+                'user_id' => $user->UserID,
+                'email' => $user->Email,
+                'mailer' => config('mail.default'),
+                'mail_host' => config('mail.mailers.smtp.host'),
+                'mail_port' => config('mail.mailers.smtp.port'),
+                'mail_encryption' => config('mail.mailers.smtp.encryption'),
+                'mail_from_address' => config('mail.from.address'),
+            ]);
+            
             $user->sendEmailVerificationNotification();
-            Log::info('Email verification resend successful', [
+            
+            // Try to flush the mailer to ensure it's actually sent
+            try {
+                $swiftMailer = Mail::getSwiftMailer();
+                if ($swiftMailer && method_exists($swiftMailer->getTransport(), 'stop')) {
+                    $swiftMailer->getTransport()->stop();
+                }
+            } catch (\Exception $e) {
+                // Ignore if transport doesn't support stop()
+                Log::warning('Could not stop mail transport', ['error' => $e->getMessage()]);
+            }
+            
+            Log::info('Email verification notification sent (unauthenticated)', [
                 'user_id' => $user->UserID,
                 'email' => $user->Email,
                 'mailer' => config('mail.default')
             ]);
             return back()->with('status', 'verification-link-sent');
+        } catch (\Swift_TransportException | \Swift_RfcComplianceException $e) {
+            Log::error('SMTP Transport error when sending verification email', [
+                'user_id' => $user->UserID,
+                'email' => $user->Email,
+                'error' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->withErrors(['email' => 'SMTP connection error: ' . $e->getMessage()]);
         } catch (\Exception $e) {
             Log::error('Failed to resend email verification', [
                 'user_id' => $user->UserID,
                 'email' => $user->Email,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'class' => get_class($e),
+                'trace' => $e->getTraceAsString()
             ]);
-            return back()->withErrors(['email' => 'Failed to send email. Please try again later or contact support.']);
+            return back()->withErrors(['email' => 'Failed to send email: ' . $e->getMessage()]);
         }
     }
 
