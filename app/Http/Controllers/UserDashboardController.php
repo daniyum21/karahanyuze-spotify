@@ -26,17 +26,14 @@ class UserDashboardController extends Controller
             return redirect()->route('login');
         }
 
-        // Get user's favorite songs
-        $favoriteSongs = Song::whereHas('favoritedBy', function($query) use ($user) {
-                $query->where('Users.UserID', $user->UserID);
-            })
-            ->where('Indirimbo.StatusID', 2)
+        // Get user's favorite songs - use direct join instead of whereHas to avoid polymorphic column name issues
+        $favoriteSongs = Song::where('Indirimbo.StatusID', 2)
             ->with(['artist', 'orchestra', 'itorero', 'status'])
-            ->join('Favorites', function($join) {
+            ->join('Favorites', function($join) use ($user) {
                 $join->on('Indirimbo.IndirimboID', '=', 'Favorites.FavoriteID')
-                     ->where('Favorites.FavoriteType', '=', 'Song');
+                     ->where('Favorites.FavoriteType', '=', 'Song')
+                     ->where('Favorites.UserID', '=', $user->UserID);
             })
-            ->where('Favorites.UserID', $user->UserID)
             ->select('Indirimbo.*', 'Favorites.created_at as favorited_at')
             ->orderBy('Favorites.created_at', 'desc')
             ->paginate(20);

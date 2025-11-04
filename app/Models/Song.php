@@ -71,6 +71,7 @@ class Song extends Model
         // Support both legacy (IndirimboID) and polymorphic (FavoriteType/FavoriteID) favorites
         return $this->morphToMany(User::class, 'favoritable', 'Favorites', 'FavoriteID', 'UserID')
             ->wherePivot('FavoriteType', 'Song')
+            ->withPivot('FavoriteType', 'FavoriteID')
             ->withTimestamps();
     }
 

@@ -5,6 +5,15 @@
 @section('content')
 <div class="min-h-screen bg-gradient-to-b from-black via-blue-950 to-black">
     <div class="container mx-auto px-4 py-12">
+        @if(session('success'))
+        <div class="mb-6 bg-green-500/20 border border-green-500/50 rounded-lg p-4 flex items-center gap-3">
+            <svg class="w-5 h-5 text-green-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+            <p class="text-green-400 font-medium">{{ session('success') }}</p>
+        </div>
+        @endif
+        
         <div class="mb-8">
             <h1 class="text-4xl font-bold text-white mb-2">My Dashboard</h1>
             <p class="text-zinc-400">Welcome back, {{ Auth::user()->FirstName ?? Auth::user()->UserName }}!</p>
