@@ -11,6 +11,7 @@ use App\Models\Playlist;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class UserDashboardController extends Controller
 {
@@ -92,68 +93,111 @@ class UserDashboardController extends Controller
      */
     public function toggleFavorite(Request $request, $type, $id)
     {
-        $user = Auth::user();
-        
-        if (!$user) {
+        try {
+            $user = Auth::user();
+            
+            if (!$user) {
+                return response()->json([
+                    'error' => 'Unauthorized',
+                    'message' => 'Please log in to favorite items.'
+                ], 401);
+            }
+            
+            // Check if email is verified (admins don't need verification)
+            if (!$user->hasVerifiedEmail() && !$user->isAdmin()) {
+                return response()->json([
+                    'error' => 'Email Not Verified',
+                    'message' => 'Please verify your email address before favoriting items.',
+                    'redirect' => route('verification.notice')
+                ], 403);
+            }
+
+            // Validate type
+            $allowedTypes = ['song', 'artist', 'orchestra', 'itorero', 'playlist'];
+            if (!in_array(strtolower($type), $allowedTypes)) {
+                return response()->json(['error' => 'Invalid favorite type'], 400);
+            }
+
+            // Map type to model class
+            $typeMap = [
+                'song' => ['Song', 'Song', 'IndirimboID'],
+                'artist' => ['Artist', 'Artist', 'UmuhanziID'],
+                'orchestra' => ['Orchestra', 'Orchestra', 'OrchestreID'],
+                'itorero' => ['Itorero', 'Itorero', 'ItoreroID'],
+                'playlist' => ['Playlist', 'Playlist', 'PlaylistID'],
+            ];
+
+            $modelClass = "App\\Models\\{$typeMap[$type][0]}";
+            $favoriteType = $typeMap[$type][1];
+            $primaryKey = $typeMap[$type][2];
+
+            // Find the entity
+            $entity = $modelClass::findOrFail($id);
+            
+            // Check if already favorited using polymorphic relationship
+            $favorite = Favorite::where('UserID', $user->UserID)
+                ->where('FavoriteType', $favoriteType)
+                ->where('FavoriteID', $id)
+                ->first();
+
+            if ($favorite) {
+                // Remove from favorites
+                $favorite->delete();
+                $isFavorited = false;
+            } else {
+                // Add to favorites using polymorphic relationship
+                // Use firstOrCreate to handle potential unique constraint violations
+                $favorite = Favorite::firstOrCreate(
+                    [
+                        'UserID' => $user->UserID,
+                        'FavoriteType' => $favoriteType,
+                        'FavoriteID' => $id,
+                    ],
+                    [
+                        // Keep IndirimboID for backward compatibility with songs
+                        'IndirimboID' => ($type === 'song') ? $id : null,
+                    ]
+                );
+                $isFavorited = true;
+            }
+
             return response()->json([
-                'error' => 'Unauthorized',
-                'message' => 'Please log in to favorite items.'
-            ], 401);
-        }
-        
-        // Check if user needs email verification (optional - we allow favoriting even if not verified)
-        // But we can provide a helpful message
-        if (!$user->hasVerifiedEmail() && !$user->isAdmin()) {
-            // Still allow favoriting, but could add a note in the response if needed
-        }
-
-        // Validate type
-        $allowedTypes = ['song', 'artist', 'orchestra', 'itorero', 'playlist'];
-        if (!in_array(strtolower($type), $allowedTypes)) {
-            return response()->json(['error' => 'Invalid favorite type'], 400);
-        }
-
-        // Map type to model class
-        $typeMap = [
-            'song' => ['Song', 'Song', 'IndirimboID'],
-            'artist' => ['Artist', 'Artist', 'UmuhanziID'],
-            'orchestra' => ['Orchestra', 'Orchestra', 'OrchestreID'],
-            'itorero' => ['Itorero', 'Itorero', 'ItoreroID'],
-            'playlist' => ['Playlist', 'Playlist', 'PlaylistID'],
-        ];
-
-        $modelClass = "App\\Models\\{$typeMap[$type][0]}";
-        $favoriteType = $typeMap[$type][1];
-        $primaryKey = $typeMap[$type][2];
-
-        // Find the entity
-        $entity = $modelClass::findOrFail($id);
-        
-        // Check if already favorited using polymorphic relationship
-        $favorite = Favorite::where('UserID', $user->UserID)
-            ->where('FavoriteType', $favoriteType)
-            ->where('FavoriteID', $id)
-            ->first();
-
-        if ($favorite) {
-            // Remove from favorites
-            $favorite->delete();
-            $isFavorited = false;
-        } else {
-            // Add to favorites using polymorphic relationship
-            Favorite::create([
-                'UserID' => $user->UserID,
-                'FavoriteType' => $favoriteType,
-                'FavoriteID' => $id,
-                // Keep IndirimboID for backward compatibility with songs
-                'IndirimboID' => ($type === 'song') ? $id : null,
+                'success' => true,
+                'isFavorited' => $isFavorited,
             ]);
-            $isFavorited = true;
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            Log::error('Favorite toggle: Entity not found', [
+                'type' => $type,
+                'id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return response()->json([
+                'error' => 'Item not found',
+                'message' => 'The item you are trying to favorite does not exist.'
+            ], 404);
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('Favorite toggle: Database error', [
+                'type' => $type,
+                'id' => $id,
+                'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings()
+            ]);
+            return response()->json([
+                'error' => 'Database error',
+                'message' => 'An error occurred while saving your favorite. Please try again.'
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('Favorite toggle: Unexpected error', [
+                'type' => $type,
+                'id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'error' => 'Server Error',
+                'message' => 'An unexpected error occurred. Please try again.'
+            ], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'isFavorited' => $isFavorited,
-        ]);
     }
 }

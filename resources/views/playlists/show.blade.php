@@ -275,13 +275,17 @@
         .then(async response => {
             // Handle redirects (302, 301, etc.)
             if (response.type === 'opaqueredirect' || response.status === 302 || response.status === 301) {
-                alert('Please log in to favorite items.');
-                window.location.href = '{{ route("login") }}';
+                if (typeof showErrorNotification === 'function') {
+                    showErrorNotification('Please log in to favorite items.');
+                }
+                setTimeout(() => {
+                    window.location.href = '{{ route("login") }}';
+                }, 1500);
                 return null;
             }
             
             // Handle authentication errors
-            if (response.status === 401 || response.status === 403) {
+            if (response.status === 401) {
                 let message = 'Please log in to favorite items.';
                 try {
                     const errorData = await response.json();
@@ -291,8 +295,36 @@
                 } catch (e) {
                     // Ignore JSON parse errors
                 }
-                alert(message);
-                window.location.href = '{{ route("login") }}';
+                if (typeof showErrorNotification === 'function') {
+                    showErrorNotification(message);
+                }
+                setTimeout(() => {
+                    window.location.href = '{{ route("login") }}';
+                }, 1500);
+                return null;
+            }
+            
+            // Handle email verification errors
+            if (response.status === 403) {
+                let message = 'Please verify your email address.';
+                let redirectUrl = '{{ route("verification.notice") }}';
+                try {
+                    const errorData = await response.json();
+                    if (errorData.message) {
+                        message = errorData.message;
+                    }
+                    if (errorData.redirect) {
+                        redirectUrl = errorData.redirect;
+                    }
+                } catch (e) {
+                    // Ignore JSON parse errors
+                }
+                if (typeof showErrorNotification === 'function') {
+                    showErrorNotification(message);
+                }
+                setTimeout(() => {
+                    window.location.href = redirectUrl;
+                }, 1500);
                 return null;
             }
             
@@ -300,8 +332,12 @@
             const contentType = response.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
                 // If not JSON, likely a redirect or HTML error page
-                alert('Please log in to favorite items.');
-                window.location.href = '{{ route("login") }}';
+                if (typeof showErrorNotification === 'function') {
+                    showErrorNotification('Please log in to favorite items.');
+                }
+                setTimeout(() => {
+                    window.location.href = '{{ route("login") }}';
+                }, 1500);
                 return null;
             }
             
@@ -338,18 +374,22 @@
                     favoriteBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg> Favorite';
                 }
             } else if (data.error) {
-                alert(data.message || data.error || 'An error occurred. Please try again.');
+                if (typeof showErrorNotification === 'function') {
+                    showErrorNotification(data.message || data.error || 'An error occurred. Please try again.');
+                }
             }
         })
         .catch(error => {
             console.error('Error toggling favorite:', error);
             // Show user-friendly error message
             const message = error.message || 'An error occurred. Please try again.';
+            if (typeof showErrorNotification === 'function') {
+                showErrorNotification(message);
+            }
             if (message.includes('log in') || message.includes('Unauthorized') || message.includes('login')) {
-                alert(message);
-                window.location.href = '{{ route("login") }}';
-            } else {
-                alert(message);
+                setTimeout(() => {
+                    window.location.href = '{{ route("login") }}';
+                }, 1500);
             }
         });
     }

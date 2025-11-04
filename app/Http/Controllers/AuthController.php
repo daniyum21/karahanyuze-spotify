@@ -49,6 +49,15 @@ class AuthController extends Controller
 
         // If user found and password matches
         if ($user && Hash::check($credentials['password'], $user->password)) {
+            // Check email verification BEFORE logging in
+            if (!$user->isAdmin() && !$user->hasVerifiedEmail()) {
+                // Don't log in unverified users - redirect to verification pending page
+                return redirect()->route('verification.pending')
+                    ->with('email', $user->Email)
+                    ->with('error', 'Please verify your email address before logging in.');
+            }
+            
+            // Log in only verified users (or admins)
             Auth::login($user);
             $request->session()->regenerate();
             
@@ -56,11 +65,6 @@ class AuthController extends Controller
             if ($user->isAdmin()) {
                 // Admins don't need email verification
                 return redirect()->intended(route('admin.dashboard'));
-            }
-            
-            // Regular users need email verification
-            if (!$user->hasVerifiedEmail()) {
-                return redirect()->route('verification.notice');
             }
             
             return redirect()->intended(route('user.dashboard'));
