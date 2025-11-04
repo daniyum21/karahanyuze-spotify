@@ -170,34 +170,6 @@ jobs:
             
             echo "🔧 Starting deployment process..."
             
-            # Create backup of public_html to preserve other domains
-            echo "📋 Creating backup of public_html..."
-            if [ -d "public_html" ]; then
-              BACKUP_NAME="public_html-backup-$(date +%Y%m%d-%H%M%S)"
-              mkdir -p backups
-              tar -czf "backups/${BACKUP_NAME}.tar.gz" -C ~ public_html || echo "⚠️  Backup failed, continuing..."
-              echo "✅ Backup created: ${BACKUP_NAME}.tar.gz"
-              
-              # Keep only last 25 backups
-              cd backups
-              ls -t *.tar.gz 2>/dev/null | tail -n +26 | xargs -r rm -f || true
-              cd ~
-            fi
-            
-            # Create backup of private directory
-            if [ -d "private/karahanyuze11" ]; then
-              echo "📋 Creating backup of Laravel app..."
-              BACKUP_NAME="karahanyuze-backup-$(date +%Y%m%d-%H%M%S)"
-              mkdir -p backups
-              tar -czf "backups/${BACKUP_NAME}.tar.gz" -C ~ private/karahanyuze11 || echo "⚠️  Backup failed, continuing..."
-              echo "✅ Backup created: ${BACKUP_NAME}.tar.gz"
-              
-              # Keep only last 25 backups
-              cd backups
-              ls -t *.tar.gz 2>/dev/null | tail -n +26 | xargs -r rm -f || true
-              cd ~
-            fi
-            
             # Create private directory if it doesn't exist
             mkdir -p private/karahanyuze11
             
@@ -404,7 +376,6 @@ jobs:
             echo "✅ Deployment completed successfully!"
             echo "📂 Laravel app: ~/private/karahanyuze11/"
             echo "🌐 Public files: ~/public_html/"
-            echo "💾 Backups saved to: ~/backups/"
             echo ""
             echo "⚠️  IMPORTANT REMINDERS:"
             echo "   1. Ensure storage/app/Audios/ and storage/app/Pictures/ are uploaded separately"
@@ -432,34 +403,6 @@ jobs:
             set -e
             
             echo "🔧 Starting deployment process (Retry)..."
-            
-            # Create backup of public_html to preserve other domains
-            echo "📋 Creating backup of public_html..."
-            if [ -d "public_html" ]; then
-              BACKUP_NAME="public_html-backup-$(date +%Y%m%d-%H%M%S)"
-              mkdir -p backups
-              tar -czf "backups/${BACKUP_NAME}.tar.gz" -C ~ public_html || echo "⚠️  Backup failed, continuing..."
-              echo "✅ Backup created: ${BACKUP_NAME}.tar.gz"
-              
-              # Keep only last 25 backups
-              cd backups
-              ls -t *.tar.gz 2>/dev/null | tail -n +26 | xargs -r rm -f || true
-              cd ~
-            fi
-            
-            # Create backup of private directory
-            if [ -d "private/karahanyuze11" ]; then
-              echo "📋 Creating backup of Laravel app..."
-              BACKUP_NAME="karahanyuze-backup-$(date +%Y%m%d-%H%M%S)"
-              mkdir -p backups
-              tar -czf "backups/${BACKUP_NAME}.tar.gz" -C ~ private/karahanyuze11 || echo "⚠️  Backup failed, continuing..."
-              echo "✅ Backup created: ${BACKUP_NAME}.tar.gz"
-              
-              # Keep only last 25 backups
-              cd backups
-              ls -t *.tar.gz 2>/dev/null | tail -n +26 | xargs -r rm -f || true
-              cd ~
-            fi
             
             # Create private directory if it doesn't exist
             mkdir -p private/karahanyuze11
