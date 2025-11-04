@@ -17,6 +17,7 @@
                 <a href="{{ route('itorero.index') }}" class="transition-colors font-medium {{ request()->routeIs('itorero.*') ? 'text-green-500' : 'text-white hover:text-green-500' }}">Itorero</a>
                 <a href="{{ route('orchestre.index') }}" class="transition-colors font-medium {{ request()->routeIs('orchestre.*') ? 'text-green-500' : 'text-white hover:text-green-500' }}">Orchestre</a>
                 <a href="{{ route('playlists.index') }}" class="transition-colors font-medium {{ request()->routeIs('playlists.*') ? 'text-green-500' : 'text-white hover:text-green-500' }}">Playlists</a>
+                <a href="{{ route('contact') }}" class="transition-colors font-medium {{ request()->routeIs('contact') ? 'text-green-500' : 'text-white hover:text-green-500' }}">Contact Us</a>
             </div>
 
             <!-- Search Bar in Header -->
