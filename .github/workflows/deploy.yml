@@ -170,33 +170,50 @@ jobs:
             
             echo "🔧 Starting deployment process..."
             
-            # Skip backup to save time (optional - can be re-enabled if needed)
-            # if [ -d "private/karahanyuze11" ]; then
-            #   echo "📋 Creating backup..."
-            #   BACKUP_NAME="karahanyuze-backup-$(date +%Y%m%d-%H%M%S)"
-            #   mkdir -p backups
-            #   cp -r private/karahanyuze11 "backups/${BACKUP_NAME}" || echo "⚠️  Backup failed, continuing..."
-            #   echo "✅ Backup created: ${BACKUP_NAME}"
-            #   
-            #   # Keep only last 5 backups
-            #   cd backups
-            #   ls -t | tail -n +6 | xargs -r rm -rf || true
-            #   cd ~
-            # fi
+            # Create backup of public_html to preserve other domains
+            echo "📋 Creating backup of public_html..."
+            if [ -d "public_html" ]; then
+              BACKUP_NAME="public_html-backup-$(date +%Y%m%d-%H%M%S)"
+              mkdir -p backups
+              tar -czf "backups/${BACKUP_NAME}.tar.gz" -C ~ public_html || echo "⚠️  Backup failed, continuing..."
+              echo "✅ Backup created: ${BACKUP_NAME}.tar.gz"
+              
+              # Keep only last 25 backups
+              cd backups
+              ls -t *.tar.gz 2>/dev/null | tail -n +26 | xargs -r rm -f || true
+              cd ~
+            fi
+            
+            # Create backup of private directory
+            if [ -d "private/karahanyuze11" ]; then
+              echo "📋 Creating backup of Laravel app..."
+              BACKUP_NAME="karahanyuze-backup-$(date +%Y%m%d-%H%M%S)"
+              mkdir -p backups
+              tar -czf "backups/${BACKUP_NAME}.tar.gz" -C ~ private/karahanyuze11 || echo "⚠️  Backup failed, continuing..."
+              echo "✅ Backup created: ${BACKUP_NAME}.tar.gz"
+              
+              # Keep only last 25 backups
+              cd backups
+              ls -t *.tar.gz 2>/dev/null | tail -n +26 | xargs -r rm -f || true
+              cd ~
+            fi
             
             # Create private directory if it doesn't exist
             mkdir -p private/karahanyuze11
-            mkdir -p public_html
             
             # Extract Laravel app to private directory
             echo "📂 Extracting Laravel app to private directory..."
             tar -xzf deploy-package.tar.gz -C private/karahanyuze11
             
-            # Copy public folder contents to public_html
-            echo "📂 Copying public files to public_html..."
+            # Copy public folder contents to public_html (preserving other domain folders)
+            echo "📂 Copying public files to public_html (preserving other domains)..."
             if [ -d "private/karahanyuze11/public" ]; then
-              rsync -av --delete private/karahanyuze11/public/ public_html/
-              echo "✅ Public files copied to public_html"
+              # Use rsync without --delete and exclude other domain folders
+              rsync -av \
+                --exclude='indirimbo' \
+                --exclude='kinyarwanda' \
+                private/karahanyuze11/public/ public_html/
+              echo "✅ Public files copied to public_html (other domains preserved)"
             else
               echo "⚠️  Warning: public folder not found in package"
             fi
@@ -387,11 +404,13 @@ jobs:
             echo "✅ Deployment completed successfully!"
             echo "📂 Laravel app: ~/private/karahanyuze11/"
             echo "🌐 Public files: ~/public_html/"
+            echo "💾 Backups saved to: ~/backups/"
             echo ""
             echo "⚠️  IMPORTANT REMINDERS:"
             echo "   1. Ensure storage/app/Audios/ and storage/app/Pictures/ are uploaded separately"
             echo "   2. Verify .env file has correct production settings"
             echo "   3. Check file permissions (storage and bootstrap/cache should be writable)"
+            echo "   4. Other domain folders (indirimbo, kinyarwanda) have been preserved"
             
       - name: ⏳ Wait 10 seconds before SSH retry
         if: steps.ssh-deploy.outcome == 'failure'
@@ -414,9 +433,36 @@ jobs:
             
             echo "🔧 Starting deployment process (Retry)..."
             
+            # Create backup of public_html to preserve other domains
+            echo "📋 Creating backup of public_html..."
+            if [ -d "public_html" ]; then
+              BACKUP_NAME="public_html-backup-$(date +%Y%m%d-%H%M%S)"
+              mkdir -p backups
+              tar -czf "backups/${BACKUP_NAME}.tar.gz" -C ~ public_html || echo "⚠️  Backup failed, continuing..."
+              echo "✅ Backup created: ${BACKUP_NAME}.tar.gz"
+              
+              # Keep only last 25 backups
+              cd backups
+              ls -t *.tar.gz 2>/dev/null | tail -n +26 | xargs -r rm -f || true
+              cd ~
+            fi
+            
+            # Create backup of private directory
+            if [ -d "private/karahanyuze11" ]; then
+              echo "📋 Creating backup of Laravel app..."
+              BACKUP_NAME="karahanyuze-backup-$(date +%Y%m%d-%H%M%S)"
+              mkdir -p backups
+              tar -czf "backups/${BACKUP_NAME}.tar.gz" -C ~ private/karahanyuze11 || echo "⚠️  Backup failed, continuing..."
+              echo "✅ Backup created: ${BACKUP_NAME}.tar.gz"
+              
+              # Keep only last 25 backups
+              cd backups
+              ls -t *.tar.gz 2>/dev/null | tail -n +26 | xargs -r rm -f || true
+              cd ~
+            fi
+            
             # Create private directory if it doesn't exist
             mkdir -p private/karahanyuze11
-            mkdir -p public_html
             
             # Check if package exists
             if [ ! -f ~/deploy-package.tar.gz ]; then
@@ -428,11 +474,15 @@ jobs:
             echo "📂 Extracting Laravel app to private directory..."
             tar -xzf deploy-package.tar.gz -C private/karahanyuze11
             
-            # Copy public folder contents to public_html
-            echo "📂 Copying public files to public_html..."
+            # Copy public folder contents to public_html (preserving other domain folders)
+            echo "📂 Copying public files to public_html (preserving other domains)..."
             if [ -d "private/karahanyuze11/public" ]; then
-              rsync -av --delete private/karahanyuze11/public/ public_html/
-              echo "✅ Public files copied to public_html"
+              # Use rsync without --delete and exclude other domain folders
+              rsync -av \
+                --exclude='indirimbo' \
+                --exclude='kinyarwanda' \
+                private/karahanyuze11/public/ public_html/
+              echo "✅ Public files copied to public_html (other domains preserved)"
             else
               echo "⚠️  Warning: public folder not found in package"
             fi
