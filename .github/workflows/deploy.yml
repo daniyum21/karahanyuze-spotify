@@ -155,10 +155,21 @@ jobs:
             # Preserve existing .env file
             if [ -f .env ]; then
               echo "✅ Using existing .env file"
+              
+              # Check if APP_KEY is set, if not generate it
+              if ! grep -q "^APP_KEY=" .env || grep -q "^APP_KEY=$" .env || grep -q "^APP_KEY=base64:" .env; then
+                echo "🔑 Generating application key..."
+                php artisan key:generate --force
+                echo "✅ Application key generated"
+              else
+                echo "✅ APP_KEY already exists in .env"
+              fi
             else
               if [ -f .env.example ]; then
                 echo "📝 Copying .env.example to .env"
                 cp .env.example .env
+                echo "🔑 Generating application key..."
+                php artisan key:generate --force
                 echo "⚠️  IMPORTANT: Please update .env file with your production settings!"
               else
                 echo "⚠️  .env file not found! Please create one manually."
