@@ -143,18 +143,20 @@ class UserDashboardController extends Controller
                 $isFavorited = false;
             } else {
                 // Add to favorites using polymorphic relationship
-                // Use firstOrCreate to handle potential unique constraint violations
-                $favorite = Favorite::firstOrCreate(
-                    [
-                        'UserID' => $user->UserID,
-                        'FavoriteType' => $favoriteType,
-                        'FavoriteID' => $id,
-                    ],
-                    [
-                        // Keep IndirimboID for backward compatibility with songs
-                        'IndirimboID' => ($type === 'song') ? $id : null,
-                    ]
-                );
+                // Prepare data array
+                $favoriteData = [
+                    'UserID' => $user->UserID,
+                    'FavoriteType' => $favoriteType,
+                    'FavoriteID' => $id,
+                ];
+                
+                // Only set IndirimboID for songs (backward compatibility)
+                if ($type === 'song') {
+                    $favoriteData['IndirimboID'] = $id;
+                }
+                // For non-songs, IndirimboID will be null (must be nullable in DB)
+                
+                $favorite = Favorite::create($favoriteData);
                 $isFavorited = true;
             }
 
