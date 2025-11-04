@@ -163,6 +163,25 @@ jobs:
             if [ -f .env ]; then
               echo "✅ Using existing .env file"
               
+              # Ensure DB_CONNECTION is set to mysql (not sqlite)
+              if ! grep -q "^DB_CONNECTION=" .env; then
+                echo "🔧 Setting DB_CONNECTION to mysql..."
+                echo "" >> .env
+                echo "# Database Connection" >> .env
+                echo "DB_CONNECTION=mysql" >> .env
+                echo "✅ DB_CONNECTION set to mysql"
+              else
+                DB_CONNECTION_VALUE=$(grep "^DB_CONNECTION=" .env | cut -d '=' -f2 | tr -d ' ')
+                if [ "$DB_CONNECTION_VALUE" != "mysql" ]; then
+                  echo "⚠️  DB_CONNECTION is set to $DB_CONNECTION_VALUE (should be mysql)"
+                  echo "🔧 Updating DB_CONNECTION to mysql..."
+                  sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=mysql|g" .env
+                  echo "✅ DB_CONNECTION updated to mysql"
+                else
+                  echo "✅ DB_CONNECTION is correctly set to mysql"
+                fi
+              fi
+              
               # Check if APP_KEY is missing or empty, if so generate it
               APP_KEY_VALUE=$(grep "^APP_KEY=" .env 2>/dev/null | cut -d '=' -f2- | tr -d ' ')
               if [ -z "$APP_KEY_VALUE" ] || [ "$APP_KEY_VALUE" = "" ]; then
