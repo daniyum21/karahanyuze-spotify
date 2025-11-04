@@ -130,6 +130,70 @@ After deployment, verify:
 
 ## Troubleshooting
 
+### Website not showing any data
+
+If the website is deployed but not showing any data:
+
+1. **SSH into your server:**
+   ```bash
+   ssh yourusername@yourdomain.com
+   ```
+
+2. **Navigate to the app directory:**
+   ```bash
+   cd ~/private/karahanyuze11
+   ```
+
+3. **Check if .env file exists and has correct database credentials:**
+   ```bash
+   cat .env | grep DB_
+   ```
+   Make sure these are set correctly:
+   - `DB_HOST`
+   - `DB_PORT`
+   - `DB_DATABASE`
+   - `DB_USERNAME`
+   - `DB_PASSWORD`
+
+4. **Test database connection:**
+   ```bash
+   php artisan db:show
+   ```
+
+5. **Run migrations (if not already run):**
+   ```bash
+   php artisan migrate --force
+   ```
+   This will create any missing tables without overwriting existing data.
+
+6. **Check if data exists in database:**
+   ```bash
+   php artisan tinker
+   ```
+   Then in tinker:
+   ```php
+   DB::table('Indirimbo')->count(); // Should return number of songs
+   DB::table('Abahanzi')->count(); // Should return number of artists
+   ```
+
+7. **Clear and cache configuration:**
+   ```bash
+   php artisan config:clear
+   php artisan route:clear
+   php artisan view:clear
+   php artisan config:cache
+   php artisan route:cache
+   ```
+
+8. **Check Laravel logs for errors:**
+   ```bash
+   tail -50 storage/logs/laravel.log
+   ```
+
+9. **Verify database has data:**
+   - If you imported the old database, data should already be there
+   - If tables are empty, you may need to import the SQL dump from `database export` folder
+
 ### Deployment fails with SSH connection error
 - Verify SSH credentials are correct
 - Check if SSH is enabled on HostMonster
