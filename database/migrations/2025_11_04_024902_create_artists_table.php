@@ -11,20 +11,23 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('Abahanzi', function (Blueprint $table) {
-            $table->increments('UmuhanziID');
-            $table->string('FirstName');
-            $table->string('LastName');
-            $table->string('Email');
-            $table->string('Twitter')->nullable();
-            $table->string('StageName');
-            $table->string('ProfilePicture')->nullable();
-            $table->text('Description')->nullable();
-            $table->boolean('IsFeatured')->default(0);
-            $table->string('UUID');
-            $table->timestamps();
-            $table->softDeletes();
-        });
+        // Only create table if it doesn't exist (we already have existing data)
+        if (!Schema::hasTable('Abahanzi')) {
+            Schema::create('Abahanzi', function (Blueprint $table) {
+                $table->increments('UmuhanziID');
+                $table->string('FirstName');
+                $table->string('LastName');
+                $table->string('Email');
+                $table->string('Twitter')->nullable();
+                $table->string('StageName');
+                $table->string('ProfilePicture')->nullable();
+                $table->text('Description')->nullable();
+                $table->boolean('IsFeatured')->default(0);
+                $table->string('UUID');
+                $table->timestamps();
+                $table->softDeletes();
+            });
+        }
     }
 
     /**

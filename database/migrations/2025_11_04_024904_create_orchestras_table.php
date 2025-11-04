@@ -11,16 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('Orchestres', function (Blueprint $table) {
-            $table->increments('OrchestreID');
-            $table->string('OrchestreName');
-            $table->text('Description')->nullable();
-            $table->text('ProfilePicture')->nullable();
-            $table->boolean('IsFeatured')->default(0);
-            $table->string('UUID');
-            $table->timestamps();
-            $table->softDeletes();
-        });
+        // Only create table if it doesn't exist (we already have existing data)
+        if (!Schema::hasTable('Orchestres')) {
+            Schema::create('Orchestres', function (Blueprint $table) {
+                $table->increments('OrchestreID');
+                $table->string('OrchestreName');
+                $table->text('Description')->nullable();
+                $table->text('ProfilePicture')->nullable();
+                $table->boolean('IsFeatured')->default(0);
+                $table->string('UUID');
+                $table->timestamps();
+                $table->softDeletes();
+            });
+        }
     }
 
     /**

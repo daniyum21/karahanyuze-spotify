@@ -11,13 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('IndirimboStatus', function (Blueprint $table) {
-            $table->increments('StatusID');
-            $table->string('StatusName');
-            $table->string('UUID');
-            $table->timestamps();
-            $table->softDeletes();
-        });
+        // Only create table if it doesn't exist (we already have existing data)
+        if (!Schema::hasTable('IndirimboStatus')) {
+            Schema::create('IndirimboStatus', function (Blueprint $table) {
+                $table->increments('StatusID');
+                $table->string('StatusName');
+                $table->string('UUID');
+                $table->timestamps();
+                $table->softDeletes();
+            });
+        }
     }
 
     /**
