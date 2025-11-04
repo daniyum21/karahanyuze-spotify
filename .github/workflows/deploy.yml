@@ -247,7 +247,7 @@ jobs:
             chmod -R 775 storage/logs
             chmod -R 775 storage/framework
             
-            # Clear all caches first
+            # Clear all caches first (IMPORTANT: Must clear config cache before checking DB)
             echo "🧹 Clearing caches..."
             php artisan config:clear || true
             php artisan route:clear || true
@@ -256,6 +256,21 @@ jobs:
             # Test database connection and run migrations (if .env exists)
             if [ -f .env ]; then
               echo "🔍 Testing database connection..."
+              
+              # Verify DB_CONNECTION is set correctly in .env
+              if grep -q "^DB_CONNECTION=mysql" .env; then
+                echo "✅ DB_CONNECTION is set to mysql in .env"
+              else
+                echo "⚠️  DB_CONNECTION is not set to mysql, fixing..."
+                if grep -q "^DB_CONNECTION=" .env; then
+                  sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=mysql|g" .env
+                else
+                  echo "DB_CONNECTION=mysql" >> .env
+                fi
+                echo "✅ DB_CONNECTION updated to mysql"
+                # Clear config cache again after changing .env
+                php artisan config:clear || true
+              fi
               
               # Test database connection
               if php artisan db:show 2>&1 | grep -q "Connection:"; then
@@ -267,9 +282,13 @@ jobs:
               else
                 echo "❌ Database connection failed!"
                 echo "   Please check your .env database settings:"
+                echo "   - DB_CONNECTION=mysql (should be set)"
                 echo "   - DB_HOST, DB_PORT, DB_DATABASE"
                 echo "   - DB_USERNAME, DB_PASSWORD"
                 echo "   - Database server must be accessible from this server"
+                echo ""
+                echo "   Current DB_CONNECTION value:"
+                grep "^DB_CONNECTION=" .env || echo "   (not set)"
               fi
               
               # Run migrations
