@@ -82,6 +82,8 @@ jobs:
           strip_components: 0
           overwrite: true
           debug: true
+          use_insecure_cipher: true
+          ssh_options: '-o KexAlgorithms=+diffie-hellman-group-exchange-sha256 -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa'
           
       - name: 🚀 Deploy on HostMonster
         uses: appleboy/ssh-action@v1.0.3
@@ -93,6 +95,8 @@ jobs:
           timeout: 300s
           command_timeout: 600s
           debug: true
+          use_insecure_cipher: true
+          ssh_options: '-o KexAlgorithms=+diffie-hellman-group-exchange-sha256 -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa'
           script: |
             set -e
             
