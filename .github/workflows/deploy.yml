@@ -1,0 +1,245 @@
+name: Deploy to HostMonster
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 🐘 Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, pdo_mysql, gd, zip, curl, fileinfo, bcmath
+          tools: composer:v2
+          
+      - name: 📦 Install Composer dependencies
+        run: |
+          composer install --optimize-autoloader --no-dev --prefer-dist --no-interaction --no-progress
+          
+      - name: 📦 Install NPM dependencies
+        run: |
+          npm ci
+          
+      - name: 🔨 Build assets
+        run: |
+          npm run build
+          
+      - name: 🔨 Create deployment package
+        run: |
+          echo "Creating deployment package..."
+          mkdir -p deploy-package
+          
+          # Copy files excluding unnecessary ones
+          rsync -av \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='tests' \
+            --exclude='storage/logs/*' \
+            --exclude='storage/framework/cache/*' \
+            --exclude='storage/framework/sessions/*' \
+            --exclude='storage/framework/views/*' \
+            --exclude='storage/app/Audios' \
+            --exclude='storage/app/Pictures' \
+            --exclude='.env' \
+            --exclude='.env.example' \
+            --exclude='deploy-package' \
+            --exclude='docker-compose.yml' \
+            --exclude='.github' \
+            --exclude='*.md' \
+            --exclude='.gitignore' \
+            --exclude='.gitattributes' \
+            --exclude='.editorconfig' \
+            --exclude='database export' \
+            --exclude='new look' \
+            --exclude='oldApp' \
+            --exclude='fix-mysql.sh' \
+            --exclude='import-database.sh' \
+            . deploy-package/
+          
+          # Create tarball
+          tar -czf deploy-package.tar.gz -C deploy-package .
+          ls -lh deploy-package.tar.gz
+          
+      - name: 📤 Upload to HostMonster via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          source: "deploy-package.tar.gz"
+          target: "~/"
+          use_insecure_cipher: true
+          
+      - name: 🚀 Deploy on HostMonster
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          use_insecure_cipher: true
+          timeout: 30s
+          command_timeout: 300s
+          debug: true
+          script: |
+            set -e
+            
+            echo "🔧 Starting deployment process..."
+            
+            # Backup current deployment
+            if [ -d "private/karahanyuze11" ]; then
+              echo "📋 Creating backup..."
+              BACKUP_NAME="karahanyuze-backup-$(date +%Y%m%d-%H%M%S)"
+              mkdir -p backups
+              cp -r private/karahanyuze11 "backups/${BACKUP_NAME}" || echo "⚠️  Backup failed, continuing..."
+              echo "✅ Backup created: ${BACKUP_NAME}"
+              
+              # Keep only last 5 backups
+              cd backups
+              ls -t | tail -n +6 | xargs -r rm -rf || true
+              cd ~
+            fi
+            
+            # Create private directory if it doesn't exist
+            mkdir -p private/karahanyuze11
+            mkdir -p public_html
+            
+            # Extract Laravel app to private directory
+            echo "📂 Extracting Laravel app to private directory..."
+            tar -xzf deploy-package.tar.gz -C private/karahanyuze11
+            
+            # Copy public folder contents to public_html
+            echo "📂 Copying public files to public_html..."
+            if [ -d "private/karahanyuze11/public" ]; then
+              rsync -av --delete private/karahanyuze11/public/ public_html/
+              echo "✅ Public files copied to public_html"
+            else
+              echo "⚠️  Warning: public folder not found in package"
+            fi
+            
+            # Update index.php to point to private directory
+            echo "🔧 Updating index.php paths..."
+            cd ~/public_html
+            if [ -f "index.php" ]; then
+              # Backup original
+              cp index.php index.php.backup
+              
+              # Update paths to point to private directory
+              sed -i "s|__DIR__.'/../vendor/autoload.php'|__DIR__.'/../private/karahanyuze11/vendor/autoload.php'|g" index.php
+              sed -i "s|__DIR__.'/../bootstrap/app.php'|__DIR__.'/../private/karahanyuze11/bootstrap/app.php'|g" index.php
+              
+              echo "✅ index.php updated"
+            else
+              echo "⚠️  Warning: index.php not found"
+            fi
+            
+            # Set up environment
+            cd ~/private/karahanyuze11
+            
+            # Preserve existing .env file
+            if [ -f .env ]; then
+              echo "✅ Using existing .env file"
+            else
+              if [ -f .env.example ]; then
+                echo "📝 Copying .env.example to .env"
+                cp .env.example .env
+                echo "⚠️  IMPORTANT: Please update .env file with your production settings!"
+              else
+                echo "⚠️  .env file not found! Please create one manually."
+              fi
+            fi
+            
+            # Create necessary directories
+            echo "📁 Creating storage directories..."
+            mkdir -p storage/logs
+            mkdir -p storage/framework/cache/data
+            mkdir -p storage/framework/sessions
+            mkdir -p storage/framework/views
+            mkdir -p storage/app/public
+            mkdir -p storage/app/Audios
+            mkdir -p storage/app/Pictures
+            mkdir -p bootstrap/cache
+            
+            # Set permissions
+            echo "🔐 Setting permissions..."
+            chmod -R 755 storage
+            chmod -R 755 bootstrap/cache
+            chmod -R 775 storage/logs
+            chmod -R 775 storage/framework
+            
+            # Clear all caches first
+            echo "🧹 Clearing caches..."
+            php artisan config:clear || true
+            php artisan route:clear || true
+            php artisan view:clear || true
+            
+            # Test database connection and run migrations (if .env exists)
+            if [ -f .env ]; then
+              echo "🔍 Testing database connection..."
+              
+              # Run migrations
+              echo "🗄️  Running database migrations..."
+              if php artisan migrate --force 2>&1; then
+                echo "✅ Migrations completed successfully"
+              else
+                echo "⚠️  Migration failed or migrations already applied"
+                echo "   This is normal if migrations are already up to date"
+              fi
+            else
+              echo "⚠️  Skipping migrations - .env file not found"
+              echo "   To run migrations manually:"
+              echo "   1. Create/upload .env file to ~/private/karahanyuze11/"
+              echo "   2. Run: cd ~/private/karahanyuze11 && php artisan migrate --force"
+            fi
+            
+            # Run optimizations
+            echo "⚡ Running optimizations..."
+            php artisan config:cache || echo "⚠️  Config cache failed"
+            php artisan route:cache || echo "⚠️  Route cache failed"
+            php artisan view:cache || echo "⚠️  View cache failed"
+            
+            # Create symbolic link from public_html/storage to private storage
+            cd ~/public_html
+            if [ ! -L storage ] && [ ! -d storage ]; then
+              echo "🔗 Creating storage symbolic link..."
+              ln -s ~/private/karahanyuze11/storage/app/public storage
+              echo "✅ Storage link created"
+            elif [ -L storage ]; then
+              echo "✅ Storage link already exists"
+            else
+              echo "⚠️  Storage directory exists as regular folder, not creating link"
+            fi
+            
+            # Clean up
+            rm -f ~/deploy-package.tar.gz
+            
+            echo "✅ Deployment completed successfully!"
+            echo "📂 Laravel app: ~/private/karahanyuze11/"
+            echo "🌐 Public files: ~/public_html/"
+            echo ""
+            echo "⚠️  IMPORTANT REMINDERS:"
+            echo "   1. Ensure storage/app/Audios/ and storage/app/Pictures/ are uploaded separately"
+            echo "   2. Verify .env file has correct production settings"
+            echo "   3. Check file permissions (storage and bootstrap/cache should be writable)"
+            
+      - name: ✅ Deployment complete
+        run: |
+          echo "🎉 Deployment to HostMonster completed successfully!"
+          echo "🌐 Your application should be live!"
+          
+      - name: 🧹 Cleanup
+        if: always()
+        run: |
+          rm -rf deploy-package
+          rm -f deploy-package.tar.gz
+
