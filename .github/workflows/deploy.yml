@@ -6,6 +6,11 @@ on:
       - main
   workflow_dispatch:  # Allow manual trigger
 
+# Cancel any in-progress deployments when a new one starts
+concurrency:
+  group: deploy-to-hostmonster
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
