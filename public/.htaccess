@@ -6,24 +6,15 @@
     RewriteEngine On
 
     # Skip ALL Laravel rules if NOT exactly karahanyuze.com or www.karahanyuze.com
-    # This allows other domains (indirimbo.com, kinyarwanda.com) mapped to subdirectories to work
-    # When indirimbo.com or kinyarwanda.com is accessed, HTTP_HOST will be that domain
-    # Only process Laravel rules for the exact main domain (no subdomains)
+    # This allows other domains/subdomains (indirimbo.com, erwanda.com, iwacu.org, etc.) 
+    # mapped to subdirectories (public_html/foldername) to work
+    # When these domains are accessed, HTTP_HOST will be that domain
+    # These domains point directly to their subdirectories via cPanel, so they skip Laravel rules
+    # Only process Laravel rules for the exact main domain (karahanyuze.com)
     RewriteCond %{HTTP_HOST} !^karahanyuze\.com$ [NC]
     RewriteCond %{HTTP_HOST} !^www\.karahanyuze\.com$ [NC]
     RewriteRule ^ - [L]
     
-    # Skip Laravel rules for any top-level directory in public_html (other websites)
-    # Any folder inside public_html is assumed to be another website mapped to a subdirectory
-    # Examples: public_html/indirimbo, public_html/kinyarwanda, public_html/anyotherdomain
-    # We only exclude Laravel's own files/directories from this rule
-    RewriteCond %{REQUEST_URI} ^/([^/]+)/? [NC]
-    RewriteCond %{DOCUMENT_ROOT}/%1 -d
-    # Exclude Laravel's own files/directories - these should be handled by Laravel
-    # Any other directory is treated as a separate website and bypasses Laravel rules
-    RewriteCond %1 !^(storage|assets|build|favicon\.ico|robots\.txt|index\.php)$ [NC]
-    RewriteRule ^ - [L]
-
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
