@@ -1,0 +1,307 @@
+@extends('layouts.app')
+
+@section('title', $artist->StageName . ' - Karahanyuze')
+
+@section('content')
+<div class="min-h-screen bg-gradient-to-b from-black via-blue-950 to-black pb-24">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Back Button -->
+        <div class="mb-6">
+            <a href="{{ route('artists.index') }}" class="inline-flex items-center gap-2 text-white hover:text-green-500 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                <span>Back to Abahanzi</span>
+            </a>
+        </div>
+
+        <!-- Artist Header -->
+        <div class="flex flex-col md:flex-row gap-8 mb-12">
+            <div class="flex-shrink-0">
+                <img 
+                    src="{{ \App\Helpers\ImageHelper::getImageUrl($artist->ProfilePicture) }}" 
+                    alt="{{ $artist->StageName }}"
+                    class="w-64 h-64 md:w-80 md:h-80 rounded-lg object-cover shadow-2xl"
+                />
+            </div>
+            <div class="flex-1">
+                <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">{{ $artist->StageName }}</h1>
+                
+                @if($artist->FirstName || $artist->LastName)
+                <p class="text-white text-lg mb-4">
+                    {{ $artist->FirstName }} {{ $artist->LastName }}
+                </p>
+                @endif
+
+                @if($artist->Description)
+                <p class="text-zinc-300 mb-6 leading-relaxed">{{ $artist->Description }}</p>
+                @endif
+
+                <div class="flex flex-wrap gap-6 text-sm text-zinc-400 mb-6">
+                    <div>
+                        <span class="font-semibold text-zinc-500">Songs:</span> 
+                        <span class="text-white">{{ $artist->songs->count() }}</span>
+                    </div>
+                    @if($artist->Email)
+                    <div>
+                        <span class="font-semibold text-zinc-500">Email:</span> 
+                        <span>{{ $artist->Email }}</span>
+                    </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <!-- Songs Section -->
+        @if($artist->songs && $artist->songs->count() > 0)
+        @php
+            $songCount = $artist->songs->count();
+            // Estimate duration (assuming average 4 minutes per song if not available)
+            $estimatedDuration = $songCount * 4; // in minutes
+        @endphp
+        <div class="mb-8">
+            <!-- Summary and Play All Button -->
+            <div class="mb-6">
+                <p class="text-white text-lg mb-4">{{ $songCount }} songs • Duration: {{ $estimatedDuration }} min</p>
+                <div class="flex gap-3">
+                    <button onclick="playAllSongs()" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg py-3 px-6 flex items-center gap-2 transition-colors">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                        Play All
+                    </button>
+                    <button class="bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg p-3 transition-colors border border-zinc-700">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Songs List -->
+            <div class="space-y-2">
+                @foreach($artist->songs as $index => $song)
+                @php
+                    $songYear = $song->created_at ? $song->created_at->format('Y') : 'N/A';
+                    $orchestraName = $song->orchestra ? $song->orchestra->OrchestreName : ($song->itorero ? $song->itorero->ItoreroName : 'Solo');
+                @endphp
+                <div id="song-item-{{ $song->IndirimboID }}" class="bg-zinc-800 hover:bg-zinc-700/80 rounded-lg p-4 transition-colors group">
+                    <div class="flex items-center gap-4">
+                        <!-- Song Number -->
+                        <div class="text-zinc-400 text-sm font-medium w-8 flex-shrink-0">
+                            {{ $index + 1 }}
+                        </div>
+                        
+                        <!-- Song Title and Artist -->
+                        <div class="flex-1 min-w-0">
+                            <a href="{{ route('indirimbo.show', [$song->slug, $song->UUID]) }}" onclick="playSongFromList({{ $song->IndirimboID }}, {{ $index }}); return false;" class="block cursor-pointer">
+                                <h3 class="font-bold text-white text-lg mb-1 hover:text-green-500 transition-colors">
+                                    {{ $song->IndirimboName }}
+                                </h3>
+                                <p class="text-zinc-400 text-sm">
+                                    {{ $orchestraName }} • {{ $songYear }}
+                                </p>
+                            </a>
+                        </div>
+                        
+                        <!-- Action Icons -->
+                        <div class="flex items-center gap-3">
+                            <button onclick="playSongFromList({{ $song->IndirimboID }}, {{ $index }}); return false;" class="p-3 hover:bg-zinc-600 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center" title="Play">
+                                <svg class="w-6 h-6 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                            </button>
+                            <button onclick="downloadSong({{ $song->IndirimboID }})" class="p-3 hover:bg-zinc-600 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center" title="Download">
+                                <svg class="w-6 h-6 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                            </button>
+                            <a href="{{ route('indirimbo.show', [$song->slug, $song->UUID]) }}" class="p-3 hover:bg-zinc-600 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center" title="More details">
+                                <svg class="w-6 h-6 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </a>
+                        </div>
+                        
+                        <!-- Duration -->
+                        <div class="text-white text-sm font-medium w-16 text-right flex-shrink-0">
+                            {{ rand(3, 5) }}:{{ str_pad(rand(0, 59), 2, '0', STR_PAD_LEFT) }}
+                        </div>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+        @else
+        <div class="text-center py-12">
+            <p class="text-zinc-400 text-lg">No songs available for this artist.</p>
+        </div>
+        @endif
+    </div>
+</div>
+
+@if($artist->songs && $artist->songs->count() > 0)
+@php
+    $songList = $artist->songs->map(function($song) {
+        return [
+            'id' => $song->IndirimboID,
+            'name' => $song->IndirimboName,
+            'image' => \App\Helpers\ImageHelper::getImageUrl($song->ProfilePicture),
+            'artist' => $song->artist ? $song->artist->StageName : ($song->orchestra ? $song->orchestra->OrchestreName : ($song->itorero ? $song->itorero->ItoreroName : 'Unknown')),
+            'audioUrl' => route('indirimbo.audio', $song->IndirimboID)
+        ];
+    })->toArray();
+@endphp
+<script>
+    // Store the song list for this artist page
+    window.artistSongList = @json($songList);
+    
+    window.currentSongIndex = -1;
+
+    window.playSongFromList = function(songId, index) {
+        const song = window.artistSongList[index];
+        if (!song) return;
+
+        // Remove highlight from all songs
+        document.querySelectorAll('[id^="song-item-"]').forEach(function(item) {
+            item.classList.remove('bg-blue-500/20', 'border-blue-500');
+            item.classList.add('bg-zinc-800');
+        });
+
+        // Highlight the current song
+        const currentSongItem = document.getElementById('song-item-' + songId);
+        if (currentSongItem) {
+            currentSongItem.classList.remove('bg-zinc-800');
+            currentSongItem.classList.add('bg-blue-500/20', 'border', 'border-blue-500');
+        }
+
+        window.currentSongIndex = index;
+
+        // Show the music player
+        const musicPlayer = document.getElementById('music-player');
+        if (musicPlayer) {
+            musicPlayer.classList.remove('hidden');
+        }
+
+        // Update player info
+        const playerImage = document.getElementById('player-image');
+        const playerTitle = document.getElementById('player-title');
+        const playerArtist = document.getElementById('player-artist');
+        const playerAudio = document.getElementById('bottom-audio-player');
+
+        if (playerImage) playerImage.src = song.image;
+        if (playerTitle) playerTitle.textContent = song.name;
+        if (playerArtist) playerArtist.textContent = song.artist;
+        if (playerAudio) {
+            // Re-initialize player events to ensure ended event is attached
+            if (typeof window.initializePlayerEvents === 'function') {
+                window.initializePlayerEvents();
+                // Get fresh reference after re-initialization
+                const freshPlayer = document.getElementById('bottom-audio-player');
+                if (freshPlayer) {
+                    freshPlayer.src = song.audioUrl;
+                    freshPlayer.load();
+                    
+                    // Play the song
+                    freshPlayer.play().catch(function(error) {
+                        console.log('Auto-play prevented (browser policy):', error);
+                    });
+                }
+            } else {
+                playerAudio.src = song.audioUrl;
+                playerAudio.load();
+                
+                // Play the song
+                playerAudio.play().catch(function(error) {
+                    console.log('Auto-play prevented (browser policy):', error);
+                });
+            }
+        }
+    };
+
+    function playAllSongs() {
+        if (window.artistSongList && window.artistSongList.length > 0) {
+            window.playSongFromList(window.artistSongList[0].id, 0);
+        }
+    }
+
+    function downloadSong(songId) {
+        // Find the song in the list to get its name
+        const song = window.artistSongList ? window.artistSongList.find(s => s.id === songId) : null;
+        const songTitle = song ? song.name : 'song';
+        const filename = songTitle.replace(/\s+/g, '-') + '.mp3';
+        const audioUrl = `/audio/${songId}`;
+        const a = document.createElement('a');
+        a.href = audioUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    // Auto-play first song when artist page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Wait for player to initialize
+        setTimeout(function() {
+            if (window.artistSongList && window.artistSongList.length > 0) {
+                // Initialize player events first
+                if (typeof window.initializePlayerEvents === 'function') {
+                    window.initializePlayerEvents();
+                }
+                
+                // Show the music player first
+                const musicPlayer = document.getElementById('music-player');
+                if (musicPlayer) {
+                    musicPlayer.classList.remove('hidden');
+                }
+                
+                // Auto-play first song
+                const firstSong = window.artistSongList[0];
+                const playerImage = document.getElementById('player-image');
+                const playerTitle = document.getElementById('player-title');
+                const playerArtist = document.getElementById('player-artist');
+                const playerAudio = document.getElementById('bottom-audio-player');
+                
+                // Update player info
+                if (playerImage) playerImage.src = firstSong.image;
+                if (playerTitle) playerTitle.textContent = firstSong.name;
+                if (playerArtist) playerArtist.textContent = firstSong.artist;
+                
+                // Highlight first song
+                const firstSongItem = document.getElementById('song-item-' + firstSong.id);
+                if (firstSongItem) {
+                    firstSongItem.classList.remove('bg-zinc-800');
+                    firstSongItem.classList.add('bg-blue-500/20', 'border', 'border-blue-500');
+                }
+                
+                window.currentSongIndex = 0;
+                
+                if (playerAudio) {
+                    playerAudio.src = firstSong.audioUrl;
+                    playerAudio.load();
+                    
+                    // Wait for audio to be ready before playing
+                    const playWhenReady = function() {
+                        playerAudio.play().catch(function(error) {
+                            console.log('Auto-play prevented (browser policy):', error);
+                            // If autoplay is blocked, at least the player is ready
+                        });
+                    };
+                    
+                    if (playerAudio.readyState >= 2) {
+                        // Audio is already loaded
+                        playWhenReady();
+                    } else {
+                        // Wait for audio to load
+                        playerAudio.addEventListener('canplay', playWhenReady, { once: true });
+                        playerAudio.addEventListener('loadeddata', playWhenReady, { once: true });
+                    }
+                }
+            }
+        }, 200);
+    });
+
+</script>
+@endif
+@endsection
+

@@ -1,0 +1,63 @@
+@extends('layouts.app')
+
+@section('title', 'Contact Us - Karahanyuze')
+
+@section('content')
+<div class="min-h-screen bg-gradient-to-b from-black via-blue-950 to-black">
+    <div class="container mx-auto px-4 py-12">
+        <div class="max-w-3xl mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-12">
+                <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">Twandikire</h1>
+                <p class="text-xl text-zinc-300">daniyum21@gmail.com cyangwa Twitter @Tangente</p>
+            </div>
+
+            <!-- Contact Information -->
+            <div class="bg-zinc-900 rounded-lg p-8 md:p-12 mb-8">
+                <div class="prose prose-invert max-w-none">
+                    <p class="text-zinc-300 text-lg leading-relaxed mb-6">
+                        Niba wifuza kunyandikira wenda ungezaho ibitekerezo byubaka, cyangwa se hari ubundi bufasha wantera, wanyandikira kuri 
+                        <a href="mailto:daniyum21@gmail.com" class="text-green-500 hover:text-green-400 transition-colors font-semibold">daniyum21@gmail.com</a>, 
+                        cyangwa kurubuga rwa twitter kuri 
+                        <a href="https://www.twitter.com/tangente" target="_blank" rel="noopener noreferrer" class="text-green-500 hover:text-green-400 transition-colors font-semibold">@tangente</a>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Contact Details Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <!-- Email Card -->
+                <div class="bg-zinc-800 rounded-lg p-6 hover:bg-zinc-700 transition-colors">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold text-white">Email</h3>
+                    </div>
+                    <a href="mailto:daniyum21@gmail.com" class="text-green-500 hover:text-green-400 transition-colors">
+                        daniyum21@gmail.com
+                    </a>
+                </div>
+
+                <!-- Twitter Card -->
+                <div class="bg-zinc-800 rounded-lg p-6 hover:bg-zinc-700 transition-colors">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold text-white">Twitter</h3>
+                    </div>
+                    <a href="https://www.twitter.com/tangente" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-400 transition-colors">
+                        @tangente
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
+

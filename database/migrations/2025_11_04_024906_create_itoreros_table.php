@@ -1,0 +1,33 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('Amatorero', function (Blueprint $table) {
+            $table->increments('ItoreroID');
+            $table->string('ItoreroName');
+            $table->text('Description')->nullable();
+            $table->text('ProfilePicture')->nullable();
+            $table->boolean('IsFeatured')->default(0);
+            $table->string('UUID');
+            $table->timestamps();
+            $table->softDeletes();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('Amatorero');
+    }
+};
