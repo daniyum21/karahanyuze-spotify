@@ -32,6 +32,9 @@
             <div class="hidden md:flex items-center gap-2 flex-shrink-0">
                 @auth
                 @if(Auth::user()->isAdmin())
+                <a href="{{ route('user.dashboard') }}" class="px-4 py-2 bg-green-500 hover:bg-green-600 rounded-lg text-white font-medium transition-colors text-sm">
+                    My Dashboard
+                </a>
                 <a href="{{ route('admin.dashboard') }}" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg text-white font-medium transition-colors text-sm">
                     Admin
                 </a>
@@ -97,6 +100,9 @@
             <div class="mt-4 pt-4 border-t border-zinc-800/50 flex flex-col gap-2">
                 @auth
                 @if(Auth::user()->isAdmin())
+                <a href="{{ route('user.dashboard') }}" class="px-4 py-3 bg-green-500 hover:bg-green-600 rounded-lg text-white font-medium transition-colors text-center">
+                    My Dashboard
+                </a>
                 <a href="{{ route('admin.dashboard') }}" class="px-4 py-3 bg-blue-500 hover:bg-blue-600 rounded-lg text-white font-medium transition-colors text-center">
                     Admin Dashboard
                 </a>
