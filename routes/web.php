@@ -149,10 +149,55 @@ Route::get('/email/verify-pending', function () {
     return view('auth.verify-pending');
 })->name('verification.pending');
 
-Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-    $request->fulfill();
-    return redirect()->route('user.dashboard')->with('success', 'Email verified successfully!');
-})->middleware(['auth', 'signed'])->name('verification.verify');
+Route::get('/email/verify/{id}/{hash}', function (Request $request, $id, $hash) {
+    try {
+        // Find the user
+        $user = \App\Models\User::findOrFail($id);
+        
+        // Verify the hash matches
+        if (! hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+            abort(403, 'Invalid verification link.');
+        }
+        
+        // Check if already verified
+        if ($user->hasVerifiedEmail()) {
+            // If already verified, log them in if not authenticated and redirect
+            if (!Auth::check()) {
+                Auth::login($user);
+            }
+            return redirect()->route('user.dashboard')->with('success', 'Email already verified!');
+        }
+        
+        // Mark email as verified
+        $user->email_verified_at = now();
+        $user->save();
+        
+        // Log the user in if not already authenticated
+        if (!Auth::check()) {
+            Auth::login($user);
+        }
+        
+        Log::info('Email verified successfully', [
+            'user_id' => $user->UserID,
+            'email' => $user->Email,
+        ]);
+        
+        return redirect()->route('user.dashboard')->with('success', 'Email verified successfully!');
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        Log::error('Email verification failed - user not found', [
+            'id' => $id,
+            'error' => $e->getMessage()
+        ]);
+        return redirect()->route('login')->withErrors(['email' => 'Invalid verification link. Please request a new one.']);
+    } catch (\Exception $e) {
+        Log::error('Email verification failed', [
+            'id' => $id,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        return redirect()->route('login')->withErrors(['email' => 'Verification failed. Please try again or request a new verification email.']);
+    }
+})->middleware('signed')->name('verification.verify');
 
 // Resend verification email (for authenticated users)
 Route::post('/email/verification-notification', function (Request $request) {
