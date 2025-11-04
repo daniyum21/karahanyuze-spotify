@@ -111,9 +111,15 @@ jobs:
           debug: true
           use_insecure_cipher: true
           
+      - name: ⏳ Wait 10 seconds before retry
+        if: steps.scp-upload.outcome == 'failure'
+        run: sleep 10
+        
       - name: 🔄 Retry SCP upload (if failed)
         if: steps.scp-upload.outcome == 'failure'
+        id: scp-retry
         uses: appleboy/scp-action@v0.1.7
+        continue-on-error: true
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
@@ -127,8 +133,27 @@ jobs:
           debug: true
           use_insecure_cipher: true
           
+      - name: ⚠️  SSH Connection Failed
+        if: steps.scp-upload.outcome == 'failure' && steps.scp-retry.outcome == 'failure'
+        run: |
+          echo "❌ SSH connection failed after retries"
+          echo ""
+          echo "This is likely a server-side issue with HostMonster:"
+          echo "  - SSH service might be down"
+          echo "  - Firewall might be blocking connections"
+          echo "  - Port might be incorrect"
+          echo ""
+          echo "Please check:"
+          echo "  1. SSH is enabled in HostMonster cPanel"
+          echo "  2. SSH port is correct (default: 22)"
+          echo "  3. Firewall/security settings"
+          echo ""
+          echo "See MANUAL_DEPLOY.md for manual deployment instructions."
+          exit 1
+          
       - name: 🚀 Deploy on HostMonster
         id: ssh-deploy
+        if: steps.scp-upload.outcome == 'success' || steps.scp-retry.outcome == 'success'
         uses: appleboy/ssh-action@v1.0.3
         continue-on-error: true
         with:
@@ -368,6 +393,10 @@ jobs:
             echo "   2. Verify .env file has correct production settings"
             echo "   3. Check file permissions (storage and bootstrap/cache should be writable)"
             
+      - name: ⏳ Wait 10 seconds before SSH retry
+        if: steps.ssh-deploy.outcome == 'failure'
+        run: sleep 10
+        
       - name: 🔄 Retry SSH deployment (if failed)
         if: steps.ssh-deploy.outcome == 'failure'
         uses: appleboy/ssh-action@v1.0.3

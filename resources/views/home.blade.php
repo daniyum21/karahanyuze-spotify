@@ -80,11 +80,11 @@
     <section class="container mx-auto px-4 py-12">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-bold text-white">Featured Artists</h2>
-            <a href="#" class="text-green-600 hover:text-green-500 text-sm font-medium">View All</a>
+            <a href="{{ route('artists.index') }}" class="text-green-600 hover:text-green-500 text-sm font-medium">View All</a>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             @foreach($featuredArtists as $artist)
-            <div class="bg-zinc-800 rounded-lg p-4 hover:bg-zinc-700 transition-colors cursor-pointer">
+            <a href="{{ route('artists.show', $artist->slug) }}" class="bg-zinc-800 rounded-lg p-4 hover:bg-zinc-700 transition-colors cursor-pointer block group">
                 <div class="mb-4">
                     <img 
                         src="{{ \App\Helpers\ImageHelper::getImageUrl($artist->ProfilePicture) }}" 
@@ -92,9 +92,9 @@
                         class="w-full aspect-square object-cover rounded-lg"
                     />
                 </div>
-                <h3 class="font-semibold text-white mb-1">{{ $artist->StageName }}</h3>
+                <h3 class="font-semibold text-white mb-1 group-hover:text-green-400 transition-colors">{{ $artist->StageName }}</h3>
                 <p class="text-sm text-zinc-400">{{ $artist->songs->count() }} songs</p>
-            </div>
+            </a>
             @endforeach
         </div>
     </section>

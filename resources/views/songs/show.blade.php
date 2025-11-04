@@ -80,7 +80,23 @@
                     @php
                         $isFavorited = false;
                         if (Auth::check()) {
-                            $isFavorited = Auth::user()->favoriteSongs()->where('Favorites.IndirimboID', $song->IndirimboID)->exists();
+                            // Check if this specific song is favorited
+                            // Must have FavoriteType = 'Song' or FavoriteType is NULL (legacy)
+                            // And (FavoriteID = song ID OR IndirimboID = song ID for legacy compatibility)
+                            // This ensures we only match actual song favorites, not orchestra/playlist favorites
+                            $isFavorited = \App\Models\Favorite::where('UserID', Auth::id())
+                                ->where(function($query) use ($song) {
+                                    $query->where(function($q) use ($song) {
+                                        // New polymorphic format: FavoriteType = 'Song' and FavoriteID = song ID
+                                        $q->where('FavoriteType', 'Song')
+                                          ->where('FavoriteID', $song->IndirimboID);
+                                    })->orWhere(function($q) use ($song) {
+                                        // Legacy format: FavoriteType is NULL and IndirimboID = song ID
+                                        $q->whereNull('FavoriteType')
+                                          ->where('IndirimboID', $song->IndirimboID);
+                                    });
+                                })
+                                ->exists();
                         }
                     @endphp
                     <button 
@@ -158,9 +174,9 @@
             <h2 class="text-2xl font-bold text-white mb-6">About This Song</h2>
             @if(!empty($song->Description))
             <div class="prose prose-invert max-w-none">
-                <p class="text-zinc-300 leading-relaxed text-lg">
-                    {{ $song->Description }}
-                </p>
+                <div class="text-zinc-300 leading-relaxed text-lg">
+                    {!! $song->Description !!}
+                </div>
             </div>
             @else
             <div class="prose prose-invert max-w-none">
