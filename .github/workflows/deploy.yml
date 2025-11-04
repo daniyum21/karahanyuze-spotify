@@ -140,6 +140,7 @@ jobs:
       - name: 🚀 Deploy on HostMonster (Attempt 1)
         id: ssh-1
         uses: appleboy/ssh-action@v1.0.3
+        continue-on-error: true
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
@@ -149,8 +150,7 @@ jobs:
           command_timeout: 600s
           debug: true
           use_insecure_cipher: true
-        continue-on-error: true
-        script: |
+          script: |
             set -e
             
             echo "🔧 Starting deployment process..."
