@@ -30,6 +30,8 @@ class Song extends Model
         'UserID',
         'approved_at',
         'UUID',
+        'PlayCount',
+        'DownloadCount',
     ];
 
     protected $casts = [
@@ -65,6 +67,17 @@ class Song extends Model
     }
 
     public function favoritedBy()
+    {
+        // Support both legacy (IndirimboID) and polymorphic (FavoriteType/FavoriteID) favorites
+        return $this->morphToMany(User::class, 'favoritable', 'Favorites', 'FavoriteID', 'UserID')
+            ->wherePivot('FavoriteType', 'Song')
+            ->withTimestamps();
+    }
+
+    /**
+     * Legacy favoritedBy relationship (backward compatibility)
+     */
+    public function favoritedByLegacy()
     {
         return $this->belongsToMany(User::class, 'Favorites', 'IndirimboID', 'UserID')
             ->withTimestamps();

@@ -37,6 +37,29 @@
                         <span class="text-white">{{ $playlist->songs->count() }}</span>
                     </div>
                 </div>
+
+                <!-- Favorite Button -->
+                @auth
+                @php
+                    $isFavorited = false;
+                    if (Auth::check()) {
+                        $isFavorited = Auth::user()->favorites()
+                            ->where('FavoriteType', 'Playlist')
+                            ->where('FavoriteID', $playlist->PlaylistID)
+                            ->exists();
+                    }
+                @endphp
+                <button 
+                    id="favorite-btn"
+                    class="px-6 py-3 {{ $isFavorited ? 'bg-red-500 hover:bg-red-600' : 'bg-zinc-800 hover:bg-zinc-700' }} text-white font-semibold rounded-lg transition-colors flex items-center gap-2"
+                    onclick="toggleFavorite()"
+                >
+                    <svg class="w-5 h-5" fill="{{ $isFavorited ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                    {{ $isFavorited ? 'Favorited' : 'Favorite' }}
+                </button>
+                @endauth
             </div>
         </div>
 
@@ -214,17 +237,52 @@
     }
 
     function downloadSong(songId) {
-        // Find the song in the list to get its name
-        const song = window.artistSongList ? window.artistSongList.find(s => s.id === songId) : null;
-        const songTitle = song ? song.name : 'song';
-        const filename = songTitle.replace(/\s+/g, '-') + '.mp3';
-        const audioUrl = `/audio/${songId}`;
-        const a = document.createElement('a');
-        a.href = audioUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        // Use the download route which tracks downloads
+        const downloadUrl = `/download/${songId}`;
+        window.location.href = downloadUrl;
+    }
+
+    function toggleFavorite() {
+        @guest
+        window.location.href = '{{ route("login") }}';
+        return;
+        @endguest
+
+        const favoriteBtn = document.getElementById('favorite-btn');
+        const svg = favoriteBtn.querySelector('svg');
+        const playlistId = {{ $playlist->PlaylistID }};
+        
+        // Send AJAX request to toggle favorite
+        fetch(`/favorites/playlist/${playlistId}/toggle`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const isFavorited = data.isFavorited;
+                
+                if (isFavorited) {
+                    favoriteBtn.classList.add('bg-red-500', 'hover:bg-red-600');
+                    favoriteBtn.classList.remove('bg-zinc-800', 'hover:bg-zinc-700');
+                    svg.setAttribute('fill', 'currentColor');
+                    favoriteBtn.innerHTML = '<svg class="w-5 h-5" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg> Favorited';
+                } else {
+                    favoriteBtn.classList.remove('bg-red-500', 'hover:bg-red-600');
+                    favoriteBtn.classList.add('bg-zinc-800', 'hover:bg-zinc-700');
+                    svg.setAttribute('fill', 'none');
+                    favoriteBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg> Favorite';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error toggling favorite:', error);
+            alert('An error occurred. Please try again.');
+        });
     }
 
     // Auto-play first song when playlist page loads

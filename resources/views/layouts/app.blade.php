@@ -8,12 +8,29 @@
     
     @if(config('services.google_analytics.id'))
     <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id={{ config('services.google_analytics.id') }}"></script>
     <script>
+        // Initialize dataLayer before loading script
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
-        gtag('config', '{{ config('services.google_analytics.id') }}');
+        
+        // Load GA script with error handling
+        (function() {
+            var script = document.createElement('script');
+            script.async = true;
+            script.src = 'https://www.googletagmanager.com/gtag/js?id={{ config('services.google_analytics.id') }}';
+            script.onerror = function() {
+                console.warn('Google Analytics script failed to load');
+            };
+            script.onload = function() {
+                gtag('config', '{{ config('services.google_analytics.id') }}', {
+                    'send_page_view': true,
+                    'transport_type': 'beacon',
+                    'anonymize_ip': true
+                });
+            };
+            document.head.appendChild(script);
+        })();
     </script>
     @endif
     

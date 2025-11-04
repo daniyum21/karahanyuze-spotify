@@ -40,4 +40,14 @@ class Playlist extends Model
     {
         return \Illuminate\Support\Str::slug($this->PlaylistName);
     }
+
+    /**
+     * Get users who favorited this playlist
+     */
+    public function favoritedBy()
+    {
+        return $this->morphToMany(User::class, 'favoritable', 'Favorites', 'FavoriteID', 'UserID')
+            ->wherePivot('FavoriteType', 'Playlist')
+            ->withTimestamps();
+    }
 }

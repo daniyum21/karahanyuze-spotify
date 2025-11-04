@@ -39,4 +39,14 @@ class Artist extends Model
     {
         return \Illuminate\Support\Str::slug($this->StageName);
     }
+
+    /**
+     * Get users who favorited this artist
+     */
+    public function favoritedBy()
+    {
+        return $this->morphToMany(User::class, 'favoritable', 'Favorites', 'FavoriteID', 'UserID')
+            ->wherePivot('FavoriteType', 'Artist')
+            ->withTimestamps();
+    }
 }

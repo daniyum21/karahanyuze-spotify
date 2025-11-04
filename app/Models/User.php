@@ -106,10 +106,61 @@ class User extends Authenticatable implements MustVerifyEmail
 
     /**
      * Get the user's favorite songs (many-to-many relationship)
+     * Legacy method for backward compatibility
      */
     public function favoriteSongs()
     {
         return $this->belongsToMany(Song::class, 'Favorites', 'UserID', 'IndirimboID')
+            ->wherePivot('FavoriteType', 'Song')
+            ->orWherePivotNull('FavoriteType') // Support legacy favorites without FavoriteType
+            ->withTimestamps();
+    }
+
+    /**
+     * Get all favorites (polymorphic)
+     */
+    public function allFavorites()
+    {
+        return $this->hasMany(Favorite::class, 'UserID', 'UserID');
+    }
+
+    /**
+     * Get favorite artists
+     */
+    public function favoriteArtists()
+    {
+        return $this->morphedByMany(Artist::class, 'favoritable', 'Favorites', 'UserID', 'FavoriteID')
+            ->wherePivot('FavoriteType', 'Artist')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get favorite orchestras
+     */
+    public function favoriteOrchestras()
+    {
+        return $this->morphedByMany(Orchestra::class, 'favoritable', 'Favorites', 'UserID', 'FavoriteID')
+            ->wherePivot('FavoriteType', 'Orchestra')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get favorite itoreros
+     */
+    public function favoriteItoreros()
+    {
+        return $this->morphedByMany(Itorero::class, 'favoritable', 'Favorites', 'UserID', 'FavoriteID')
+            ->wherePivot('FavoriteType', 'Itorero')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get favorite playlists
+     */
+    public function favoritePlaylists()
+    {
+        return $this->morphedByMany(Playlist::class, 'favoritable', 'Favorites', 'UserID', 'FavoriteID')
+            ->wherePivot('FavoriteType', 'Playlist')
             ->withTimestamps();
     }
 
@@ -144,5 +195,14 @@ class User extends Authenticatable implements MustVerifyEmail
         
         // For regular users, check if email_verified_at is not null
         return !is_null($this->email_verified_at);
+    }
+
+    /**
+     * Send the email verification notification.
+     * Override to use our custom notification.
+     */
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new \App\Notifications\VerifyEmailNotification);
     }
 }

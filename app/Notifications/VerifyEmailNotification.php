@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notification;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Log;
 
 class VerifyEmailNotification extends Notification
 {
@@ -21,6 +22,15 @@ class VerifyEmailNotification extends Notification
      */
     public function via(object $notifiable): array
     {
+        // Ensure we're using SMTP, not log
+        $mailer = config('mail.default');
+        if ($mailer === 'log' || $mailer === 'file') {
+            Log::warning('Email notification attempted but mailer is set to log/file. Please set MAIL_MAILER=smtp in .env', [
+                'mailer' => $mailer,
+                'user_email' => $notifiable->getEmailForVerification()
+            ]);
+        }
+        
         return ['mail'];
     }
 

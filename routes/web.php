@@ -28,6 +28,63 @@ use Illuminate\Support\Facades\Auth;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/contact', [HomeController::class, 'contactUs'])->name('contact');
 
+// Test email route (for debugging - remove or protect in production)
+Route::get('/test-email', function () {
+    $mailer = config('mail.default');
+    $smtpConfig = config('mail.mailers.smtp');
+    
+    $info = [
+        'mailer' => $mailer,
+        'smtp_host' => $smtpConfig['host'] ?? 'not set',
+        'smtp_port' => $smtpConfig['port'] ?? 'not set',
+        'smtp_username' => $smtpConfig['username'] ? 'set' : 'not set',
+        'smtp_password' => $smtpConfig['password'] ? 'set' : 'not set',
+        'smtp_encryption' => $smtpConfig['encryption'] ?? 'not set',
+        'from_address' => config('mail.from.address'),
+        'from_name' => config('mail.from.name'),
+    ];
+    
+    if ($mailer === 'log' || $mailer === 'file') {
+        return response()->json([
+            'error' => 'Mailer is set to ' . $mailer . ' instead of smtp',
+            'config' => $info,
+            'message' => 'Please set MAIL_MAILER=smtp in your .env file and run: php artisan config:clear'
+        ], 400);
+    }
+    
+    try {
+        $testEmail = request('email', config('mail.from.address'));
+        
+        \Illuminate\Support\Facades\Mail::raw('This is a test email from Karahanyuze. If you receive this, your email configuration is working correctly!', function ($message) use ($testEmail) {
+            $message->to($testEmail)
+                    ->subject('Test Email from Karahanyuze');
+        });
+        
+        Log::info('Test email sent successfully', [
+            'to' => $testEmail,
+            'mailer' => $mailer
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Test email sent successfully to ' . $testEmail,
+            'config' => $info
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Test email failed', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+            'config' => $info
+        ]);
+        
+        return response()->json([
+            'error' => 'Failed to send test email',
+            'message' => $e->getMessage(),
+            'config' => $info
+        ], 500);
+    }
+})->name('test.email');
+
 // Authentication Routes
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
@@ -47,20 +104,75 @@ Route::get('/email/verify', function () {
     return view('auth.verify');
 })->middleware('auth')->name('verification.notice');
 
+// Verification pending page (for users who just registered, no auth required)
+Route::get('/email/verify-pending', function () {
+    return view('auth.verify-pending');
+})->name('verification.pending');
+
 Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
     $request->fulfill();
     return redirect()->route('user.dashboard')->with('success', 'Email verified successfully!');
 })->middleware(['auth', 'signed'])->name('verification.verify');
 
+// Resend verification email (for authenticated users)
 Route::post('/email/verification-notification', function (Request $request) {
-    $request->user()->sendEmailVerificationNotification();
-    return back()->with('status', 'verification-link-sent');
+    try {
+        $user = $request->user();
+        $user->sendEmailVerificationNotification();
+        Log::info('Email verification resend successful (authenticated)', [
+            'user_id' => $user->UserID,
+            'email' => $user->Email,
+            'mailer' => config('mail.default')
+        ]);
+        return back()->with('status', 'verification-link-sent');
+    } catch (\Exception $e) {
+        Log::error('Failed to resend email verification (authenticated)', [
+            'user_id' => $request->user()->UserID ?? null,
+            'error' => $e->getMessage()
+        ]);
+        return back()->withErrors(['email' => 'Failed to send email. Please try again later or contact support.']);
+    }
 })->middleware(['auth', 'throttle:6,1'])->name('verification.send');
+
+// Resend verification email (for unauthenticated users, by email)
+Route::post('/email/resend-verification', function (Request $request) {
+    $request->validate([
+        'email' => 'required|email|exists:Users,Email',
+    ]);
+
+    $user = \App\Models\User::where('Email', $request->email)->first();
+    
+    if ($user && !$user->hasVerifiedEmail()) {
+        try {
+            $user->sendEmailVerificationNotification();
+            Log::info('Email verification resend successful', [
+                'user_id' => $user->UserID,
+                'email' => $user->Email,
+                'mailer' => config('mail.default')
+            ]);
+            return back()->with('status', 'verification-link-sent');
+        } catch (\Exception $e) {
+            Log::error('Failed to resend email verification', [
+                'user_id' => $user->UserID,
+                'email' => $user->Email,
+                'error' => $e->getMessage()
+            ]);
+            return back()->withErrors(['email' => 'Failed to send email. Please try again later or contact support.']);
+        }
+    }
+
+    return back()->withErrors(['email' => 'This email is already verified or does not exist.']);
+})->middleware('throttle:6,1')->name('verification.resend');
 
 // User Dashboard Routes (authenticated and verified users)
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [UserDashboardController::class, 'index'])->name('user.dashboard');
-    Route::post('/favorites/{songId}/toggle', [UserDashboardController::class, 'toggleFavorite'])->name('favorites.toggle');
+    // Legacy route for songs (backward compatibility)
+    Route::post('/favorites/{songId}/toggle', function ($songId) {
+        return app(\App\Http\Controllers\UserDashboardController::class)->toggleFavorite(request(), 'song', $songId);
+    })->name('favorites.toggle');
+    // New polymorphic route for all favorite types
+    Route::post('/favorites/{type}/{id}/toggle', [UserDashboardController::class, 'toggleFavorite'])->name('favorites.toggle.polymorphic');
 });
 
 Route::get('/artists', [ArtistController::class, 'index'])->name('artists.index');
@@ -91,7 +203,7 @@ Route::get('/indirimbo/search', [SongController::class, 'search'])->name('indiri
 // Use old format: /indirimbo/{slug}/{uuid} for backward compatibility with Google listings
 Route::get('/indirimbo/{slug}/{uuid}', [SongController::class, 'show'])->name('indirimbo.show');
 
-// Route to serve audio files
+// Route to serve audio files (increments play count)
 Route::get('/audio/{id}', function ($id) {
     $song = Song::findOrFail($id);
     
@@ -159,12 +271,106 @@ Route::get('/audio/{id}', function ($id) {
         abort(404, 'Audio file not found for song: ' . $song->IndirimboName);
     }
     
+    // Increment play count (only once per session to avoid multiple increments from seeking)
+    $sessionKey = 'song_played_' . $song->IndirimboID;
+    if (!session()->has($sessionKey)) {
+        $song->increment('PlayCount');
+        session()->put($sessionKey, true);
+        // Store for 1 hour to prevent re-counting during the same listening session
+        session()->put($sessionKey . '_expires', now()->addHour());
+    } elseif (session()->has($sessionKey . '_expires') && now()->greaterThan(session()->get($sessionKey . '_expires'))) {
+        // Reset after 1 hour to allow re-counting
+        session()->forget([$sessionKey, $sessionKey . '_expires']);
+        $song->increment('PlayCount');
+        session()->put($sessionKey, true);
+        session()->put($sessionKey . '_expires', now()->addHour());
+    }
+    
     return Response::file($audioPath, [
         'Content-Type' => 'audio/mpeg',
         'Cache-Control' => 'public, max-age=3600',
         'Accept-Ranges' => 'bytes',
     ]);
 })->name('indirimbo.audio');
+
+// Route to download audio files (increments download count)
+Route::get('/download/{id}', function ($id) {
+    $song = Song::findOrFail($id);
+    
+    if (empty($song->IndirimboUrl)) {
+        abort(404, 'Song has no audio URL');
+    }
+    
+    // Handle different path formats
+    $url = $song->IndirimboUrl;
+    
+    // Remove leading slash if present
+    $url = ltrim($url, '/');
+    
+    // Base directory for audio files
+    $basePath = storage_path('app/Audios/');
+    
+    // Try different variations of the filename
+    $possiblePaths = [];
+    
+    // 1. Direct match (with or without extension)
+    $possiblePaths[] = $basePath . $url;
+    
+    // 2. If no extension, try with .mp3
+    if (!pathinfo($url, PATHINFO_EXTENSION)) {
+        $possiblePaths[] = $basePath . $url . '.mp3';
+    }
+    
+    // 3. Just the filename (basename)
+    $possiblePaths[] = $basePath . basename($url);
+    
+    // 4. Basename with .mp3 if no extension
+    if (!pathinfo($url, PATHINFO_EXTENSION)) {
+        $possiblePaths[] = $basePath . basename($url) . '.mp3';
+    }
+    
+    // Find the first existing file
+    $audioPath = null;
+    foreach ($possiblePaths as $path) {
+        if (file_exists($path)) {
+            $audioPath = $path;
+            break;
+        }
+    }
+    
+    // If still not found, try to find by partial match (first 50 characters)
+    if (!$audioPath && strlen($url) > 50) {
+        $searchPattern = substr($url, 0, 50);
+        $files = glob($basePath . '*');
+        foreach ($files as $file) {
+            if (strpos(basename($file), $searchPattern) !== false) {
+                $audioPath = $file;
+                break;
+            }
+        }
+    }
+    
+    if (!$audioPath) {
+        // Return a more helpful error
+        Log::warning('Audio file not found for download', [
+            'song_id' => $id,
+            'song_name' => $song->IndirimboName,
+            'indirimbo_url' => $url,
+            'tried_paths' => array_slice($possiblePaths, 0, 4)
+        ]);
+        abort(404, 'Audio file not found for song: ' . $song->IndirimboName);
+    }
+    
+    // Increment download count
+    $song->increment('DownloadCount');
+    
+    // Generate filename with song title (spaces replaced by dashes)
+    $filename = \Illuminate\Support\Str::slug($song->IndirimboName) . '.mp3';
+    
+    return Response::download($audioPath, $filename, [
+        'Content-Type' => 'audio/mpeg',
+    ]);
+})->name('indirimbo.download');
 
 // Admin Routes
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {

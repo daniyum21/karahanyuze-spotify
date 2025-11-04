@@ -35,4 +35,14 @@ class Orchestra extends Model
     {
         return \Illuminate\Support\Str::slug($this->OrchestreName);
     }
+
+    /**
+     * Get users who favorited this orchestra
+     */
+    public function favoritedBy()
+    {
+        return $this->morphToMany(User::class, 'favoritable', 'Favorites', 'FavoriteID', 'UserID')
+            ->wherePivot('FavoriteType', 'Orchestra')
+            ->withTimestamps();
+    }
 }

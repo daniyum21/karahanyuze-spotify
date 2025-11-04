@@ -66,8 +66,12 @@
                         <p class="font-semibold" id="song-duration">--:--</p>
                     </div>
                     <div>
+                        <p class="text-xs text-zinc-400 mb-1">Plays</p>
+                        <p class="font-semibold">{{ number_format($song->PlayCount ?? 0) }}</p>
+                    </div>
+                    <div>
                         <p class="text-xs text-zinc-400 mb-1">Downloads</p>
-                        <p class="font-semibold">0</p>
+                        <p class="font-semibold">{{ number_format($song->DownloadCount ?? 0) }}</p>
                     </div>
                 </div>
 
@@ -349,15 +353,9 @@
     }
 
     function downloadSong() {
-        const audioUrl = '{{ route("indirimbo.audio", $song->IndirimboID) }}';
-        const songTitle = '{{ $song->IndirimboName }}';
-        const filename = songTitle.replace(/\s+/g, '-') + '.mp3';
-        const a = document.createElement('a');
-        a.href = audioUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        // Use the download route which tracks downloads
+        const downloadUrl = '{{ route("indirimbo.download", $song->IndirimboID) }}';
+        window.location.href = downloadUrl;
     }
 
     function toggleShareMenu() {

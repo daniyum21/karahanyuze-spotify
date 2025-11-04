@@ -71,9 +71,24 @@ class RegisterController extends Controller
         ]);
 
         // Send email verification notification (only for regular users, admins don't need it)
-        $user->sendEmailVerificationNotification();
+        try {
+            $user->sendEmailVerificationNotification();
+            \Log::info('Email verification notification sent', [
+                'user_id' => $user->UserID,
+                'email' => $user->Email,
+                'mailer' => config('mail.default')
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to send email verification notification', [
+                'user_id' => $user->UserID,
+                'email' => $user->Email,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            // Continue anyway - user can resend later
+        }
 
-        // Redirect to login page with message
-        return redirect()->route('login')->with('success', 'Registration successful! Please check your email to verify your account before logging in.');
+        // Redirect to verification notice page (no login required)
+        return redirect()->route('verification.pending')->with('email', $user->Email);
     }
 }

@@ -35,4 +35,14 @@ class Itorero extends Model
     {
         return \Illuminate\Support\Str::slug($this->ItoreroName);
     }
+
+    /**
+     * Get users who favorited this itorero
+     */
+    public function favoritedBy()
+    {
+        return $this->morphToMany(User::class, 'favoritable', 'Favorites', 'FavoriteID', 'UserID')
+            ->wherePivot('FavoriteType', 'Itorero')
+            ->withTimestamps();
+    }
 }
