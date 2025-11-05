@@ -49,31 +49,11 @@
                     <!-- Song Names Container (for multiple files) -->
                     <div id="song-names-container"></div>
 
-                    <!-- Description -->
-                    <div>
-                        <label for="Description" class="block text-sm font-medium text-white mb-2">Description</label>
-                        <div id="Description" style="min-height: 200px;">{!! old('Description') !!}</div>
-                        <textarea 
-                            name="Description" 
-                            style="display: none;"
-                        >{{ old('Description') }}</textarea>
-                    </div>
-
-                    <!-- Lyrics -->
-                    <div>
-                        <label for="Lyrics" class="block text-sm font-medium text-white mb-2">Lyrics</label>
-                        <div id="Lyrics" style="min-height: 400px;">{!! old('Lyrics') !!}</div>
-                        <textarea 
-                            name="Lyrics" 
-                            style="display: none;"
-                        >{{ old('Lyrics') }}</textarea>
-                    </div>
-
                     <!-- Note about status -->
                     <div class="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-4">
                         <p class="text-sm text-yellow-400">
                             <strong>Note:</strong> All uploaded songs will be set to <strong>Pending</strong> status by default. 
-                            You can edit each song individually later to approve and make them public.
+                            You can edit each song individually later to add description/lyrics, approve, and make them public.
                         </p>
                     </div>
 
@@ -242,102 +222,8 @@
     </div>
 </div>
 
-<!-- Quill.js WYSIWYG Editor (Free & Open Source) -->
-<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
-<style>
-    .ql-editor {
-        min-height: 300px;
-        background-color: #18181b;
-        color: #fff;
-    }
-    .ql-container {
-        background-color: #18181b;
-        color: #fff;
-        border-color: #3f3f46;
-    }
-    .ql-toolbar {
-        background-color: #27272a;
-        border-color: #3f3f46;
-    }
-    .ql-toolbar .ql-stroke {
-        stroke: #fff;
-    }
-    .ql-toolbar .ql-fill {
-        fill: #fff;
-    }
-    .ql-toolbar .ql-picker-label {
-        color: #fff;
-    }
-    .ql-toolbar button:hover, .ql-toolbar button.ql-active {
-        color: #22c55e;
-    }
-    .ql-toolbar .ql-stroke.ql-thin {
-        stroke: #fff;
-    }
-</style>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Quill for Description
-    if (document.getElementById('Description')) {
-        const descriptionQuill = new Quill('#Description', {
-            theme: 'snow',
-            modules: {
-                toolbar: [
-                    [{ 'header': [1, 2, 3, false] }],
-                    ['bold', 'italic', 'underline', 'strike'],
-                    [{ 'color': [] }, { 'background': [] }],
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                    [{ 'align': [] }],
-                    ['link'],
-                    ['clean']
-                ]
-            },
-            placeholder: 'Enter song description'
-        });
-        
-        // Sync Quill content to textarea before form submission
-        const descriptionForm = document.querySelector('form');
-        if (descriptionForm) {
-            descriptionForm.addEventListener('submit', function() {
-                const descriptionInput = document.querySelector('textarea[name="Description"]');
-                if (descriptionInput) {
-                    descriptionInput.value = descriptionQuill.root.innerHTML;
-                }
-            });
-        }
-    }
-    
-    // Initialize Quill for Lyrics
-    if (document.getElementById('Lyrics')) {
-        const lyricsQuill = new Quill('#Lyrics', {
-            theme: 'snow',
-            modules: {
-                toolbar: [
-                    [{ 'header': [1, 2, 3, false] }],
-                    ['bold', 'italic', 'underline', 'strike'],
-                    [{ 'color': [] }, { 'background': [] }],
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                    [{ 'align': [] }],
-                    ['link'],
-                    ['clean']
-                ]
-            },
-            placeholder: 'Enter song lyrics'
-        });
-        
-        // Sync Quill content to textarea before form submission
-        const lyricsForm = document.querySelector('form');
-        if (lyricsForm) {
-            lyricsForm.addEventListener('submit', function() {
-                const lyricsInput = document.querySelector('textarea[name="Lyrics"]');
-                if (lyricsInput) {
-                    lyricsInput.value = lyricsQuill.root.innerHTML;
-                }
-            });
-        }
-    }
-    
     // Display selected files with remove functionality and drag & drop
     const audioInput = document.getElementById('audio');
     const fileList = document.getElementById('file-list');
