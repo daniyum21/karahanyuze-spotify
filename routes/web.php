@@ -1,4 +1,4 @@
-<?php
+the song<?php
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
@@ -428,6 +428,8 @@ Route::middleware(['auth'])->group(function () {
         // Songs (legacy standalone routes)
         Route::get('songs/create', [UserSongController::class, 'create'])->name('songs.create');
         Route::post('songs', [UserSongController::class, 'store'])->name('songs.store');
+        Route::get('songs/{uuid}/edit', [UserSongController::class, 'edit'])->name('songs.edit');
+        Route::put('songs/{uuid}', [UserSongController::class, 'update'])->name('songs.update');
     });
     
     // Nested song creation routes (RESTful structure)

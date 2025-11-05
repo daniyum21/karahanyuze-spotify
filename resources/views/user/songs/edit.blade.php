@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Edit Song - Admin')
+@section('title', 'Edit Song - Karahanyuze')
 
 @section('content')
 <div class="min-h-screen bg-gradient-to-b from-black via-blue-950 to-black">
@@ -8,12 +8,18 @@
         <div class="max-w-4xl mx-auto">
             <div class="mb-8">
                 <h1 class="text-4xl font-bold text-white mb-2">Edit Song</h1>
-                <p class="text-zinc-400">Update song information</p>
+                <p class="text-zinc-400">Update your song information. This song is currently pending review.</p>
             </div>
 
             @if(session('success'))
             <div class="bg-green-500/20 border border-green-500 text-green-400 px-4 py-3 rounded-lg mb-6">
                 {{ session('success') }}
+            </div>
+            @endif
+
+            @if(session('error'))
+            <div class="bg-red-500/20 border border-red-500 text-red-400 px-4 py-3 rounded-lg mb-6">
+                {{ session('error') }}
             </div>
             @endif
 
@@ -27,13 +33,7 @@
             </div>
             @endif
 
-            <form action="{{ route('admin.songs.update', $song->UUID) }}" method="POST" enctype="multipart/form-data" class="bg-zinc-900 rounded-lg p-8">
-                @if(request('status'))
-                <input type="hidden" name="status" value="{{ request('status') }}">
-                @endif
-                @if(request('featured'))
-                <input type="hidden" name="featured" value="{{ request('featured') }}">
-                @endif
+            <form action="{{ route('user.songs.update', $song->UUID) }}" method="POST" enctype="multipart/form-data" class="bg-zinc-900 rounded-lg p-8">
                 @csrf
                 @method('PUT')
 
@@ -124,77 +124,56 @@
                                 </select>
                             </div>
                         </div>
-                        <p class="text-xs text-zinc-500 mt-2">Select one owner (artist, orchestra, or itorero)</p>
-                    </div>
-
-                    <!-- Status -->
-                    <div>
-                        <label for="StatusID" class="block text-sm font-medium text-white mb-2">Status *</label>
-                        <select 
-                            id="StatusID" 
-                            name="StatusID"
-                            required
-                            class="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                        >
-                            <option value="">Select status</option>
-                            @foreach($statuses as $status)
-                                <option value="{{ $status->StatusID }}" {{ old('StatusID', $song->StatusID) == $status->StatusID ? 'selected' : '' }}>
-                                    {{ $status->StatusName }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <!-- Featured -->
-                    <div>
-                        <label class="flex items-center gap-3">
-                            <input 
-                                type="checkbox" 
-                                name="IsFeatured" 
-                                value="1"
-                                {{ old('IsFeatured', $song->IsFeatured) ? 'checked' : '' }}
-                                class="w-5 h-5 text-green-500 bg-zinc-800 border-zinc-700 rounded focus:ring-green-500"
-                            >
-                            <span class="text-white">Featured Song</span>
-                        </label>
+                        <p class="text-xs text-zinc-500 mt-2">Select the owner of this song (artist, orchestra, or itorero). Only one can be selected.</p>
                     </div>
 
                     <!-- Current Audio File -->
                     @if($song->IndirimboUrl)
-                    <div class="bg-zinc-800 p-4 rounded-lg">
-                        <p class="text-sm text-zinc-400 mb-2">Current Audio File:</p>
-                        <p class="text-xs text-zinc-500 mb-3">The song will play in the music player at the bottom of the page</p>
+                    <div>
+                        <label class="block text-sm font-medium text-white mb-2">Current Audio File</label>
+                        <div class="bg-zinc-800 rounded-lg p-4">
+                            <p class="text-white text-sm mb-2">Current audio file is uploaded.</p>
+                            <audio controls class="w-full">
+                                <source src="{{ route('indirimbo.audio', $song->IndirimboID) }}" type="audio/mpeg">
+                                Your browser does not support the audio element.
+                            </audio>
+                        </div>
+                        <p class="text-xs text-zinc-500 mt-2">Upload a new file below to replace the current audio.</p>
                     </div>
                     @endif
 
                     <!-- Audio File -->
                     <div>
-                        <label for="audio" class="block text-sm font-medium text-white mb-2">Replace Audio File (MP3)</label>
+                        <label for="audio" class="block text-sm font-medium text-white mb-2">Audio File (MP3) {{ $song->IndirimboUrl ? '(Optional - replaces current)' : '(Required)' }}</label>
                         <input 
                             type="file" 
                             id="audio" 
                             name="audio"
                             accept="audio/mpeg,audio/mp3"
+                            {{ !$song->IndirimboUrl ? 'required' : '' }}
                             class="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-500 file:text-white hover:file:bg-green-600"
                         >
-                        <p class="text-xs text-zinc-500 mt-2">Leave empty to keep current file. Maximum file size: 50MB</p>
+                        <p class="text-xs text-zinc-500 mt-2">Maximum file size: 50MB</p>
                     </div>
 
                     <!-- Current Image -->
                     @if($song->ProfilePicture)
-                    <div class="bg-zinc-800 p-4 rounded-lg">
-                        <p class="text-sm text-zinc-400 mb-2">Current Image:</p>
-                        <img 
-                            src="{{ \App\Helpers\ImageHelper::getImageUrl($song->ProfilePicture) }}" 
-                            alt="{{ $song->IndirimboName }}"
-                            class="w-32 h-32 rounded object-cover"
-                        >
+                    <div>
+                        <label class="block text-sm font-medium text-white mb-2">Current Image</label>
+                        <div class="mb-4">
+                            <img 
+                                src="{{ \App\Helpers\ImageHelper::getImageUrl($song->ProfilePicture) }}" 
+                                alt="{{ $song->IndirimboName }}"
+                                class="w-32 h-32 rounded-lg object-cover"
+                            >
+                        </div>
+                        <p class="text-xs text-zinc-500 mt-2">Upload a new file below to replace the current image.</p>
                     </div>
                     @endif
 
                     <!-- Image File -->
                     <div>
-                        <label for="image" class="block text-sm font-medium text-white mb-2">Replace Image</label>
+                        <label for="image" class="block text-sm font-medium text-white mb-2">Image (Optional)</label>
                         <input 
                             type="file" 
                             id="image" 
@@ -203,6 +182,13 @@
                             class="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-500 file:text-white hover:file:bg-green-600"
                         >
                         <p class="text-xs text-zinc-500 mt-2">Leave empty to keep current image. Maximum file size: 2MB</p>
+                    </div>
+
+                    <!-- Status Notice -->
+                    <div class="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-4">
+                        <p class="text-sm text-yellow-400">
+                            <strong>Note:</strong> This song is currently <strong>Pending</strong> review. After you update it, it will remain pending until reviewed by an administrator.
+                        </p>
                     </div>
 
                     <!-- Submit Buttons -->
@@ -214,7 +200,7 @@
                             Update Song
                         </button>
                         <a 
-                            href="{{ route('admin.songs.index') }}" 
+                            href="{{ route('user.dashboard') }}" 
                             class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors text-center"
                         >
                             Cancel
@@ -321,90 +307,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }
-    
-});
-</script>
-
-<!-- Initialize music player for this song -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const audioUrl = '{{ $song->IndirimboUrl ? route("indirimbo.audio", $song->IndirimboID) : "" }}';
-    const musicPlayer = document.getElementById('music-player');
-    
-    // Show the music player immediately
-    if (musicPlayer) {
-        musicPlayer.classList.remove('hidden');
-    }
-    
-    // Wait a bit for the player component to be fully loaded
-    setTimeout(function() {
-        const player = document.getElementById('bottom-audio-player');
-        const playerImage = document.getElementById('player-image');
-        const playerTitle = document.getElementById('player-title');
-        const playerArtist = document.getElementById('player-artist');
-        
-        if (!audioUrl || !audioUrl.trim()) {
-            console.warn('No audio URL available for this song');
-            return;
-        }
-        
-        if (player) {
-            // Update player info first
-            if (playerImage) {
-                playerImage.src = '{{ $song->ProfilePicture ? \App\Helpers\ImageHelper::getImageUrl($song->ProfilePicture) : asset("images/default-song.png") }}';
-            }
-            if (playerTitle) {
-                playerTitle.textContent = '{{ $song->IndirimboName }}';
-            }
-            if (playerArtist) {
-                @if($song->artist)
-                    playerArtist.textContent = '{{ $song->artist->StageName }}';
-                @elseif($song->orchestra)
-                    playerArtist.textContent = '{{ $song->orchestra->OrchestreName }}';
-                @elseif($song->itorero)
-                    playerArtist.textContent = '{{ $song->itorero->ItoreroName }}';
-                @else
-                    playerArtist.textContent = 'Unknown';
-                @endif
-            }
-            
-            // Re-initialize player events to ensure they're attached
-            if (typeof window.initializePlayerEvents === 'function') {
-                window.initializePlayerEvents();
-            }
-            
-            // Get fresh reference after re-initialization
-            const freshPlayer = document.getElementById('bottom-audio-player');
-            if (freshPlayer) {
-                // Set audio source
-                freshPlayer.src = audioUrl;
-                freshPlayer.currentTime = 0;
-                freshPlayer.load();
-                
-                // Wait for audio to be ready
-                freshPlayer.addEventListener('canplay', function playWhenReady() {
-                    console.log('Audio ready, attempting to play');
-                    freshPlayer.play().catch(function(error) {
-                        console.log('Auto-play prevented (browser policy):', error);
-                    });
-                    freshPlayer.removeEventListener('canplay', playWhenReady);
-                }, { once: true });
-                
-                // Also try to load after a short delay to ensure everything is ready
-                setTimeout(function() {
-                    if (freshPlayer.readyState >= 2) { // HAVE_CURRENT_DATA or better
-                        freshPlayer.play().catch(function(error) {
-                            console.log('Auto-play prevented (browser policy):', error);
-                        });
-                    }
-                }, 500);
-            } else {
-                console.error('Audio player element not found');
-            }
-        } else {
-            console.error('Bottom audio player element not found');
-        }
-    }, 200);
 });
 </script>
 @endsection

@@ -69,8 +69,12 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-zinc-800">
-                    @foreach($songs as $song)
-                    <tr class="hover:bg-zinc-800/50 transition-colors">
+                    @foreach($songs as $index => $song)
+                    <tr 
+                        id="song-item-{{ $song->IndirimboID }}"
+                        class="hover:bg-zinc-800/50 transition-colors cursor-pointer bg-zinc-700"
+                        onclick="playSongFromList({{ $song->IndirimboID }}, {{ $index }})"
+                    >
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center gap-4">
                                 @if($song->ProfilePicture)
@@ -144,6 +148,7 @@
                                 <a 
                                     href="{{ route('admin.songs.edit', $song->UUID) }}?status=pending" 
                                     class="text-green-400 hover:text-green-300 transition-colors"
+                                    onclick="event.stopPropagation();"
                                 >
                                     Review
                                 </a>
@@ -151,6 +156,7 @@
                                 <a 
                                     href="{{ route('admin.songs.edit', $song->UUID) }}" 
                                     class="text-green-400 hover:text-green-300 transition-colors"
+                                    onclick="event.stopPropagation();"
                                 >
                                     Edit
                                 </a>
@@ -160,6 +166,7 @@
                                     method="POST" 
                                     class="inline"
                                     onsubmit="return confirm('Are you sure you want to delete this song?');"
+                                    onclick="event.stopPropagation();"
                                 >
                                     @csrf
                                     @method('DELETE')
@@ -195,5 +202,76 @@
         @endif
     </div>
 </div>
+
+@if($songs->count() > 0)
+@php
+    $songList = $songs->map(function($song) {
+        return [
+            'id' => $song->IndirimboID,
+            'name' => $song->IndirimboName,
+            'image' => \App\Helpers\ImageHelper::getImageUrl($song->ProfilePicture),
+            'artist' => $song->artist ? $song->artist->StageName : ($song->orchestra ? $song->orchestra->OrchestreName : ($song->itorero ? $song->itorero->ItoreroName : 'Unknown')),
+            'audioUrl' => route('indirimbo.audio', $song->IndirimboID)
+        ];
+    })->values()->toArray();
+@endphp
+<script>
+    // Store the song list for this page
+    window.artistSongList = @json($songList);
+    window.currentSongIndex = -1;
+
+    window.playSongFromList = function(songId, index) {
+        const song = window.artistSongList[index];
+        if (!song) return;
+
+        // Remove highlight from all songs
+        document.querySelectorAll('[id^="song-item-"]').forEach(function(item) {
+            item.classList.remove('bg-blue-500/20', 'border-blue-500', 'border');
+            item.classList.add('bg-zinc-700');
+        });
+
+        // Highlight the current song
+        const currentSongItem = document.getElementById('song-item-' + songId);
+        if (currentSongItem) {
+            currentSongItem.classList.remove('bg-zinc-700');
+            currentSongItem.classList.add('bg-blue-500/20', 'border', 'border-blue-500');
+        }
+
+        window.currentSongIndex = index;
+
+        // Show the music player
+        const musicPlayer = document.getElementById('music-player');
+        if (musicPlayer) {
+            musicPlayer.classList.remove('hidden');
+        }
+
+        // Update player info
+        const playerImage = document.getElementById('player-image');
+        const playerTitle = document.getElementById('player-title');
+        const playerArtist = document.getElementById('player-artist');
+        const playerAudio = document.getElementById('bottom-audio-player');
+
+        if (playerImage) playerImage.src = song.image;
+        if (playerTitle) playerTitle.textContent = song.name;
+        if (playerArtist) playerArtist.textContent = song.artist;
+        if (playerAudio) {
+            // Re-initialize player events to ensure ended event is attached
+            if (typeof window.initializePlayerEvents === 'function') {
+                window.initializePlayerEvents();
+            }
+            
+            const freshPlayer = document.getElementById('bottom-audio-player');
+            if (freshPlayer) {
+                freshPlayer.src = song.audioUrl;
+                freshPlayer.currentTime = 0;
+                freshPlayer.load();
+                freshPlayer.play().catch(function(error) {
+                    console.log('Auto-play prevented (browser policy):', error);
+                });
+            }
+        }
+    };
+</script>
+@endif
 @endsection
 

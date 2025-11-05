@@ -441,6 +441,114 @@ class UserSongController extends Controller
     }
     
     /**
+     * Show the form for editing the specified song.
+     * Users can only edit their own pending songs.
+     */
+    public function edit($uuid)
+    {
+        $song = Song::where('UUID', $uuid)
+            ->with(['artist', 'orchestra', 'itorero', 'status'])
+            ->firstOrFail();
+        
+        // Check if user owns this song
+        if ($song->UserID !== Auth::id()) {
+            abort(403, 'You can only edit your own songs.');
+        }
+        
+        // Only allow editing pending songs
+        if ($song->isApproved() || $song->isDeclined()) {
+            return redirect()->route('user.dashboard')
+                ->with('error', 'You can only edit pending songs. This song has already been reviewed.');
+        }
+        
+        $artists = Artist::orderBy('StageName', 'asc')->get();
+        $orchestras = Orchestra::orderBy('OrchestreName', 'asc')->get();
+        $itoreros = Itorero::orderBy('ItoreroName', 'asc')->get();
+        
+        return view('user.songs.edit', compact('song', 'artists', 'orchestras', 'itoreros'));
+    }
+    
+    /**
+     * Update the specified song.
+     * Users can only update their own pending songs.
+     */
+    public function update(Request $request, $uuid)
+    {
+        $song = Song::where('UUID', $uuid)->firstOrFail();
+        
+        // Check if user owns this song
+        if ($song->UserID !== Auth::id()) {
+            abort(403, 'You can only edit your own songs.');
+        }
+        
+        // Only allow editing pending songs
+        if ($song->isApproved() || $song->isDeclined()) {
+            return redirect()->route('user.dashboard')
+                ->with('error', 'You can only edit pending songs. This song has already been reviewed.');
+        }
+        
+        $validated = $request->validate([
+            'IndirimboName' => 'required|string|max:255',
+            'Description' => 'nullable|string',
+            'Lyrics' => 'nullable|string',
+            'UmuhanziID' => 'nullable|exists:Abahanzi,UmuhanziID',
+            'OrchestreID' => 'nullable|exists:Orchestres,OrchestreID',
+            'ItoreroID' => 'nullable|exists:Amatorero,ItoreroID',
+            'audio' => 'nullable|file|mimes:mp3|max:51200', // 50MB max
+            'image' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',
+        ]);
+        
+        // Update song name
+        $song->IndirimboName = $validated['IndirimboName'];
+        $song->Description = $validated['Description'] ?? '';
+        $song->Lyrics = $validated['Lyrics'] ?? '';
+        
+        // Update owner associations - only one can be set
+        $song->UmuhanziID = $validated['UmuhanziID'] ?? null;
+        $song->OrchestreID = $validated['OrchestreID'] ?? null;
+        $song->ItoreroID = $validated['ItoreroID'] ?? null;
+        
+        // Handle audio file upload if provided
+        if ($request->hasFile('audio')) {
+            // Delete old audio file if exists
+            if ($song->IndirimboUrl) {
+                $oldPath = storage_path('app/' . $song->IndirimboUrl);
+                if (file_exists($oldPath)) {
+                    unlink($oldPath);
+                }
+            }
+            
+            $audioFile = $request->file('audio');
+            $extension = $audioFile->getClientOriginalExtension();
+            $fileName = Str::random(100) . '_' . time() . '.' . $extension;
+            $path = $audioFile->storeAs('Audios', $fileName, 'local');
+            $song->IndirimboUrl = 'Audios/' . $fileName;
+        }
+        
+        // Handle image file upload if provided
+        if ($request->hasFile('image')) {
+            // Delete old image if exists
+            if ($song->ProfilePicture) {
+                $oldImagePath = storage_path('app/' . $song->ProfilePicture);
+                if (file_exists($oldImagePath)) {
+                    unlink($oldImagePath);
+                }
+            }
+            
+            $imageFile = $request->file('image');
+            $extension = $imageFile->getClientOriginalExtension();
+            $imageFileName = Str::random(100) . '_' . time() . '.' . $extension;
+            $imagePath = $imageFile->storeAs('Pictures', $imageFileName, 'local');
+            $song->ProfilePicture = 'Pictures/' . $imageFileName;
+        }
+        
+        $song->save();
+        
+        return redirect()->route('user.dashboard')
+            ->with('success', 'Song updated successfully! It will remain pending until reviewed by an administrator.');
+    }
+    
+    /**
      * Convert PHP size string (e.g., "500M", "2G") to bytes
      */
     private function convertToBytes($size)

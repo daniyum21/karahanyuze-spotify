@@ -66,6 +66,10 @@ class AdminSongController extends Controller
             }
         }
 
+        // Only include songs with audio URLs
+        $query->whereNotNull('IndirimboUrl')
+            ->where('IndirimboUrl', '!=', '');
+        
         $songs = $query->latest()->paginate(20)->withQueryString();
 
         $filterStatus = $request->get('status', 'all');
