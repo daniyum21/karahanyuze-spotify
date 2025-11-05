@@ -13,24 +13,30 @@
         @if($itoreros->count() > 0)
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             @foreach($itoreros as $itorero)
-            <a href="{{ route('itorero.show', $itorero->slug) }}" class="bg-zinc-800 rounded-lg p-4 hover:bg-zinc-700 transition-colors block group">
+            @php
+                $slug = $itorero->slug ?? \Illuminate\Support\Str::slug($itorero->ItoreroName);
+            @endphp
+            <a href="{{ route('itorero.show', $slug) }}" class="bg-zinc-800 rounded-lg p-4 hover:bg-zinc-700 transition-colors block group">
                 <div class="mb-4">
                     <img 
                         src="{{ \App\Helpers\ImageHelper::getImageUrl($itorero->ProfilePicture) }}" 
                         alt="{{ $itorero->ItoreroName }}"
                         class="w-full aspect-square object-cover rounded-lg"
+                        onerror="this.src='{{ asset('placeholder.svg') }}'"
                     />
                 </div>
                 <h3 class="font-semibold text-white mb-1">{{ $itorero->ItoreroName }}</h3>
-                <p class="text-sm text-zinc-400">{{ $itorero->songs_count ?? 0 }} {{ $itorero->songs_count == 1 ? 'song' : 'songs' }}</p>
+                <p class="text-sm text-zinc-400">{{ $itorero->songs_count ?? 0 }} {{ ($itorero->songs_count ?? 0) == 1 ? 'song' : 'songs' }}</p>
             </a>
             @endforeach
         </div>
 
         <!-- Pagination -->
+        @if($itoreros->hasPages())
         <div class="mt-8">
             {{ $itoreros->links() }}
         </div>
+        @endif
         @else
         <div class="text-center py-12">
             <p class="text-zinc-400 text-lg">No itorero found.</p>

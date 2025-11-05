@@ -399,6 +399,7 @@ Route::post('/email/resend-verification', function (Request $request) {
 // User Dashboard Routes (authenticated and verified users only)
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [UserDashboardController::class, 'index'])->name('user.dashboard');
+    Route::get('/submissions', [UserSubmissionController::class, 'index'])->name('submissions.index');
 });
 
 // Favorites routes (authenticated users only - no verification required)

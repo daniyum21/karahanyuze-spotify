@@ -71,11 +71,14 @@
                             </td>
                             <td class="px-6 py-4">
                                 @if($song->isApproved())
-                                <a href="{{ route('indirimbo.show', [$song->slug, $song->UUID]) }}" class="text-green-400 hover:text-green-300 text-sm" target="_blank">
+                                <a href="{{ route('indirimbo.show', [$song->slug, $song->UUID]) }}" class="text-green-400 hover:text-green-300 text-sm mr-3" target="_blank">
                                     View Public →
                                 </a>
                                 @elseif(!$song->isApproved() && !$song->isDeclined())
-                                <span class="text-zinc-500 text-sm">Awaiting Review</span>
+                                <a href="{{ route('user.songs.edit', $song->UUID) }}" class="text-blue-400 hover:text-blue-300 text-sm font-medium">
+                                    Edit/Rename →
+                                </a>
+                                <span class="text-zinc-500 text-sm ml-3">Awaiting Review</span>
                                 @else
                                 <span class="text-zinc-500 text-sm">Cannot Edit</span>
                                 @endif
