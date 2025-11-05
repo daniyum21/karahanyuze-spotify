@@ -532,6 +532,14 @@ class AdminSongController extends Controller
         \Log::info('Admin song upload request', [
             'has_audio' => $request->hasFile('audio'),
             'audio_count' => $request->hasFile('audio') ? count($request->file('audio')) : 0,
+            'has_image' => $request->hasFile('image'),
+            'image_info' => $request->hasFile('image') ? [
+                'name' => $request->file('image')->getClientOriginalName(),
+                'size' => $request->file('image')->getSize(),
+                'mime' => $request->file('image')->getMimeType(),
+                'error' => $request->file('image')->getError(),
+            ] : 'no image',
+            'all_files' => $request->allFiles(),
             'entity_type' => $entityType,
             'entity_id' => $entityId,
             'entity_id_field' => $entityIdField,
@@ -680,6 +688,7 @@ class AdminSongController extends Controller
                     // Set the entity ID using the correct field name
                     $song->setAttribute($entityIdField, $entityId);
                     $song->UserID = auth()->id();
+                    $song->ProfilePicture = ''; // Set default empty string for ProfilePicture
                     
                     \Log::info('Admin song upload: Song model attributes set', [
                         'index' => $index,
@@ -691,6 +700,7 @@ class AdminSongController extends Controller
                         'user_id' => $song->UserID,
                         'description_length' => strlen($song->Description),
                         'lyrics_length' => strlen($song->Lyrics),
+                        'profile_picture' => $song->ProfilePicture ?: 'empty',
                     ]);
 
                     // Handle audio file upload
@@ -717,27 +727,49 @@ class AdminSongController extends Controller
                     ]);
 
                     // Handle image file upload (only for first file if provided)
-                    if ($index === 0 && $request->hasFile('image')) {
-                        \Log::info('Admin song upload: Processing image file', [
+                    if ($index === 0) {
+                        \Log::info('Admin song upload: Checking for image file', [
                             'index' => $index,
-                        ]);
-                        
-                        $imageFile = $request->file('image');
-                        $extension = $imageFile->getClientOriginalExtension();
-                        $imageFileName = Str::random(100) . '_' . time() . '.' . $extension;
-                        $imagePath = $imageFile->storeAs('Pictures', $imageFileName, 'local');
-                        $song->ProfilePicture = 'Pictures/' . $imageFileName;
-                        
-                        \Log::info('Admin song upload: Image file stored', [
-                            'index' => $index,
-                            'image_path' => $imagePath,
-                            'profile_picture' => $song->ProfilePicture,
-                        ]);
-                    } else {
-                        \Log::info('Admin song upload: No image file (skipping)', [
-                            'index' => $index,
-                            'is_first_file' => $index === 0,
                             'has_image' => $request->hasFile('image'),
+                            'all_files' => array_keys($request->allFiles()),
+                            'request_keys' => array_keys($request->all()),
+                        ]);
+                        
+                        if ($request->hasFile('image')) {
+                            \Log::info('Admin song upload: Processing image file', [
+                                'index' => $index,
+                                'image_name' => $request->file('image')->getClientOriginalName(),
+                                'image_size' => $request->file('image')->getSize(),
+                                'image_error' => $request->file('image')->getError(),
+                            ]);
+                            
+                            $imageFile = $request->file('image');
+                            $extension = $imageFile->getClientOriginalExtension();
+                            $imageFileName = Str::random(100) . '_' . time() . '.' . $extension;
+                            $imagePath = $imageFile->storeAs('Pictures', $imageFileName, 'local');
+                            $song->ProfilePicture = 'Pictures/' . $imageFileName;
+                            
+                            \Log::info('Admin song upload: Image file stored', [
+                                'index' => $index,
+                                'image_path' => $imagePath,
+                                'profile_picture' => $song->ProfilePicture,
+                            ]);
+                        } else {
+                            \Log::warning('Admin song upload: No image file provided', [
+                                'index' => $index,
+                                'is_first_file' => $index === 0,
+                                'has_image' => $request->hasFile('image'),
+                                'request_has_image_key' => $request->has('image'),
+                            ]);
+                            // Ensure ProfilePicture is set to empty string if no image
+                            if (empty($song->ProfilePicture)) {
+                                $song->ProfilePicture = '';
+                            }
+                        }
+                    } else {
+                        // For subsequent files, don't set image
+                        \Log::info('Admin song upload: Not first file, skipping image', [
+                            'index' => $index,
                         ]);
                     }
 
