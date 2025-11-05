@@ -528,21 +528,11 @@ class AdminSongController extends Controller
      */
     private function storeSongForEntity(Request $request, $entity, $entityType, $entityId, $entityIdField, $entityUuid, $isAdmin = false)
     {
-        // Log incoming request for debugging
+        // Log incoming request for debugging (minimal logging for performance)
         \Log::info('Admin song upload request', [
-            'has_audio' => $request->hasFile('audio'),
             'audio_count' => $request->hasFile('audio') ? count($request->file('audio')) : 0,
             'has_image' => $request->hasFile('image'),
-            'image_info' => $request->hasFile('image') ? [
-                'name' => $request->file('image')->getClientOriginalName(),
-                'size' => $request->file('image')->getSize(),
-                'mime' => $request->file('image')->getMimeType(),
-                'error' => $request->file('image')->getError(),
-            ] : 'no image',
-            'all_files' => $request->allFiles(),
             'entity_type' => $entityType,
-            'entity_id' => $entityId,
-            'entity_id_field' => $entityIdField,
         ]);
         
         // First, manually validate that we have at least one file
@@ -566,10 +556,7 @@ class AdminSongController extends Controller
                 'song_names.*' => 'nullable|string|max:255',
             ]);
             
-            \Log::info('Admin song upload: Validation passed', [
-                'audio_count' => count($validated['audio']),
-                'song_names_count' => isset($validated['song_names']) ? count($validated['song_names']) : 0,
-            ]);
+            // Validation passed - minimal logging
         } catch (\Illuminate\Validation\ValidationException $e) {
             \Log::error('Admin song upload: Validation failed', [
                 'errors' => $e->errors(),
@@ -584,37 +571,18 @@ class AdminSongController extends Controller
             return back()->withErrors(['error' => 'An unexpected error occurred: ' . $e->getMessage()])->withInput();
         }
 
-        // Get pending status for all uploaded songs
-        \Log::info('Admin song upload: Looking for pending status');
+        // Get pending status for all uploaded songs (cache this query for better performance)
         $pendingStatus = SongStatus::where('StatusName', 'Pending')
             ->orWhere('StatusName', 'pending')
             ->orWhere('StatusName', 'Pending Approval')
             ->first();
         
-        \Log::info('Admin song upload: Pending status query result', [
-            'found' => $pendingStatus ? true : false,
-            'status_id' => $pendingStatus ? $pendingStatus->StatusID : null,
-            'status_name' => $pendingStatus ? $pendingStatus->StatusName : null,
-        ]);
-        
         if (!$pendingStatus) {
-            \Log::warning('Admin song upload: Pending status not found, trying StatusID=1');
             $pendingStatus = SongStatus::find(1);
-            \Log::info('Admin song upload: StatusID=1 result', [
-                'found' => $pendingStatus ? true : false,
-                'status_id' => $pendingStatus ? $pendingStatus->StatusID : null,
-                'status_name' => $pendingStatus ? $pendingStatus->StatusName : null,
-            ]);
         }
         
         if (!$pendingStatus) {
-            \Log::warning('Admin song upload: StatusID=1 not found, trying first status');
             $pendingStatus = SongStatus::first();
-            \Log::info('Admin song upload: First status result', [
-                'found' => $pendingStatus ? true : false,
-                'status_id' => $pendingStatus ? $pendingStatus->StatusID : null,
-                'status_name' => $pendingStatus ? $pendingStatus->StatusName : null,
-            ]);
         }
         
         if (!$pendingStatus) {
@@ -622,50 +590,23 @@ class AdminSongController extends Controller
             return back()->withErrors(['status' => 'Unable to set song status. Please contact administrator.'])->withInput();
         }
 
-        \Log::info('Admin song upload: Using status', [
-            'status_id' => $pendingStatus->StatusID,
-            'status_name' => $pendingStatus->StatusName,
-        ]);
-
         $uploadedSongs = [];
         $errors = [];
 
         // Get song names from user input
         $songNames = $validated['song_names'] ?? [];
-        \Log::info('Admin song upload: Song names from request', [
-            'song_names_count' => count($songNames),
-            'song_names' => $songNames,
-        ]);
 
         // Handle multiple audio file uploads
         if ($request->hasFile('audio')) {
             $audioFiles = $request->file('audio');
-            \Log::info('Admin song upload: Processing audio files', [
-                'audio_files_count' => count($audioFiles),
-            ]);
             
             foreach ($audioFiles as $index => $audioFile) {
-                \Log::info('Admin song upload: Processing file', [
-                    'index' => $index,
-                    'file_name' => $audioFile->getClientOriginalName(),
-                    'file_size' => $audioFile->getSize(),
-                    'file_mime' => $audioFile->getMimeType(),
-                    'file_error' => $audioFile->getError(),
-                ]);
-                
                 try {
                     $song = new Song();
-                    \Log::info('Admin song upload: Created new Song model', [
-                        'index' => $index,
-                    ]);
                     
                     // Get song name from user input or extract from filename
                     if (!empty($songNames[$index]) && trim($songNames[$index]) !== '') {
                         $song->IndirimboName = trim($songNames[$index]);
-                        \Log::info('Admin song upload: Using user-provided song name', [
-                            'index' => $index,
-                            'song_name' => $song->IndirimboName,
-                        ]);
                     } else {
                         // Extract from filename
                         $originalName = $audioFile->getClientOriginalName();
@@ -673,11 +614,6 @@ class AdminSongController extends Controller
                         $songName = str_replace(['_', '-'], ' ', $nameWithoutExt);
                         $songName = ucwords(strtolower($songName));
                         $song->IndirimboName = $songName;
-                        \Log::info('Admin song upload: Extracted song name from filename', [
-                            'index' => $index,
-                            'original_name' => $originalName,
-                            'extracted_name' => $songName,
-                        ]);
                     }
                     
                     $song->Description = $validated['Description'] ?? '';
@@ -690,111 +626,24 @@ class AdminSongController extends Controller
                     $song->setAttribute($entityIdField, $entityId);
                     $song->UserID = auth()->id();
                     $song->ProfilePicture = ''; // Set default empty string for ProfilePicture
-                    
-                    \Log::info('Admin song upload: Song model attributes set', [
-                        'index' => $index,
-                        'song_name' => $song->IndirimboName,
-                        'entity_id_field' => $entityIdField,
-                        'entity_id' => $entityId,
-                        'status_id' => $song->StatusID,
-                        'uuid' => $song->UUID,
-                        'user_id' => $song->UserID,
-                        'description_length' => strlen($song->Description),
-                        'lyrics_length' => strlen($song->Lyrics),
-                        'profile_picture' => $song->ProfilePicture ?: 'empty',
-                    ]);
 
                     // Handle audio file upload
-                    \Log::info('Admin song upload: Storing audio file', [
-                        'index' => $index,
-                        'original_name' => $audioFile->getClientOriginalName(),
-                    ]);
-                    
                     $extension = $audioFile->getClientOriginalExtension();
                     $fileName = Str::random(100) . '_' . time() . '_' . $index . '.' . $extension;
-                    \Log::info('Admin song upload: Generated audio file name', [
-                        'index' => $index,
-                        'file_name' => $fileName,
-                        'extension' => $extension,
-                    ]);
-                    
                     $path = $audioFile->storeAs('Audios', $fileName, 'local');
                     $song->IndirimboUrl = 'Audios/' . $fileName;
-                    
-                    \Log::info('Admin song upload: Audio file stored', [
-                        'index' => $index,
-                        'storage_path' => $path,
-                        'indirimbo_url' => $song->IndirimboUrl,
-                    ]);
 
                     // Handle image file upload (only for first file if provided)
-                    if ($index === 0) {
-                        \Log::info('Admin song upload: Checking for image file', [
-                            'index' => $index,
-                            'has_image' => $request->hasFile('image'),
-                            'all_files' => array_keys($request->allFiles()),
-                            'request_keys' => array_keys($request->all()),
-                        ]);
-                        
-                        if ($request->hasFile('image')) {
-                            \Log::info('Admin song upload: Processing image file', [
-                                'index' => $index,
-                                'image_name' => $request->file('image')->getClientOriginalName(),
-                                'image_size' => $request->file('image')->getSize(),
-                                'image_error' => $request->file('image')->getError(),
-                            ]);
-                            
-                            $imageFile = $request->file('image');
-                            $extension = $imageFile->getClientOriginalExtension();
-                            $imageFileName = Str::random(100) . '_' . time() . '.' . $extension;
-                            $imagePath = $imageFile->storeAs('Pictures', $imageFileName, 'local');
-                            $song->ProfilePicture = 'Pictures/' . $imageFileName;
-                            
-                            \Log::info('Admin song upload: Image file stored', [
-                                'index' => $index,
-                                'image_path' => $imagePath,
-                                'profile_picture' => $song->ProfilePicture,
-                            ]);
-                        } else {
-                            \Log::warning('Admin song upload: No image file provided', [
-                                'index' => $index,
-                                'is_first_file' => $index === 0,
-                                'has_image' => $request->hasFile('image'),
-                                'request_has_image_key' => $request->has('image'),
-                            ]);
-                            // Ensure ProfilePicture is set to empty string if no image
-                            if (empty($song->ProfilePicture)) {
-                                $song->ProfilePicture = '';
-                            }
-                        }
-                    } else {
-                        // For subsequent files, don't set image
-                        \Log::info('Admin song upload: Not first file, skipping image', [
-                            'index' => $index,
-                        ]);
+                    if ($index === 0 && $request->hasFile('image')) {
+                        $imageFile = $request->file('image');
+                        $extension = $imageFile->getClientOriginalExtension();
+                        $imageFileName = Str::random(100) . '_' . time() . '.' . $extension;
+                        $imagePath = $imageFile->storeAs('Pictures', $imageFileName, 'local');
+                        $song->ProfilePicture = 'Pictures/' . $imageFileName;
                     }
 
-                    \Log::info('Admin song upload: Attempting to save song to database', [
-                        'index' => $index,
-                        'song_attributes' => $song->getAttributes(),
-                    ]);
-                    
                     $song->save();
-                    
-                    \Log::info('Admin song upload: Song saved successfully', [
-                        'index' => $index,
-                        'song_id' => $song->IndirimboID,
-                        'song_uuid' => $song->UUID,
-                        'song_name' => $song->IndirimboName,
-                        'indirimbo_id' => $song->IndirimboID,
-                    ]);
-                    
                     $uploadedSongs[] = $song->IndirimboName;
-                    
-                    \Log::info('Admin song upload: Song added to uploaded list', [
-                        'index' => $index,
-                        'uploaded_count' => count($uploadedSongs),
-                    ]);
                 } catch (\Exception $e) {
                     $errorMsg = 'Failed to upload ' . $audioFile->getClientOriginalName() . ': ' . $e->getMessage();
                     $errors[] = $errorMsg;
@@ -806,20 +655,9 @@ class AdminSongController extends Controller
                         'error_code' => $e->getCode(),
                         'error_file' => $e->getFile(),
                         'error_line' => $e->getLine(),
-                        'trace' => $e->getTraceAsString(),
                     ]);
                 }
             }
-            
-            \Log::info('Admin song upload: Finished processing all files', [
-                'total_files' => count($audioFiles),
-                'uploaded_count' => count($uploadedSongs),
-                'error_count' => count($errors),
-            ]);
-        } else {
-            \Log::warning('Admin song upload: No audio files found after validation', [
-                'has_audio' => $request->hasFile('audio'),
-            ]);
         }
 
         // Redirect back to the same entity's song creation page
@@ -840,34 +678,8 @@ class AdminSongController extends Controller
             $message .= ' Errors: ' . implode(', ', $errors);
         }
         
-        \Log::info('Admin song upload: Preparing redirect', [
-            'route_name' => $routeName,
-            'entity_uuid' => $entityUuid,
-            'uploaded_count' => count($uploadedSongs),
-            'error_count' => count($errors),
-            'message' => $message,
-            'message_type' => count($errors) > 0 ? 'error' : 'success',
-        ]);
-        
-        try {
-            $redirect = redirect()->route($routeName, ['uuid' => $entityUuid])
-                ->with(count($errors) > 0 ? 'error' : 'success', $message);
-            
-            \Log::info('Admin song upload: Redirect created successfully', [
-                'route_name' => $routeName,
-            ]);
-            
-            return $redirect;
-        } catch (\Exception $e) {
-            \Log::error('Admin song upload: Failed to create redirect', [
-                'route_name' => $routeName,
-                'entity_uuid' => $entityUuid,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            
-            return back()->with(count($errors) > 0 ? 'error' : 'success', $message);
-        }
+        return redirect()->route($routeName, ['uuid' => $entityUuid])
+            ->with(count($errors) > 0 ? 'error' : 'success', $message);
     }
 }
 
