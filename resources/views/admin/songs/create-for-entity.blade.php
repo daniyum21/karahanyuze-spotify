@@ -469,8 +469,23 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Update hidden inputs before form submission
         const form = document.querySelector('form');
+        const imageInput = document.getElementById('image');
+        
         if (form) {
             form.addEventListener('submit', function(e) {
+                console.log('Form submission started');
+                
+                // Log image input status
+                if (imageInput) {
+                    console.log('Image input status:', {
+                        hasFiles: imageInput.files && imageInput.files.length > 0,
+                        fileCount: imageInput.files ? imageInput.files.length : 0,
+                        fileName: imageInput.files && imageInput.files.length > 0 ? imageInput.files[0].name : 'none',
+                    });
+                } else {
+                    console.warn('Image input not found!');
+                }
+                
                 // Ensure files are re-attached
                 try {
                     const dataTransfer = new DataTransfer();
@@ -488,7 +503,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         alert('Error: No files selected. Please select files again.');
                         return false;
                     }
-                    console.log('Submitting form with', audioInput.files.length, 'files');
+                    console.log('Submitting form with', audioInput.files.length, 'audio files');
                 } catch (err) {
                     console.error('Error preparing files for upload:', err);
                     e.preventDefault();
@@ -498,6 +513,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Update hidden inputs for song names
                 updateHiddenInputs();
+                
+                console.log('Form submission proceeding...');
             });
         }
     }

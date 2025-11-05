@@ -684,6 +684,7 @@ class AdminSongController extends Controller
                     $song->Lyrics = $validated['Lyrics'] ?? '';
                     $song->StatusID = $pendingStatus->StatusID;
                     $song->IsFeatured = false;
+                    $song->IsPrivate = false; // Set default value for IsPrivate
                     $song->UUID = (string) Str::uuid();
                     // Set the entity ID using the correct field name
                     $song->setAttribute($entityIdField, $entityId);
