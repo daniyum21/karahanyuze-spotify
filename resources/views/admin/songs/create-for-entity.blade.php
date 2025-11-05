@@ -251,7 +251,26 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // File input change event
         audioInput.addEventListener('change', function(e) {
-            addFiles(Array.from(e.target.files));
+            console.log('File input changed, files selected:', e.target.files.length);
+            if (e.target.files && e.target.files.length > 0) {
+                const newFiles = Array.from(e.target.files);
+                console.log('Adding files:', newFiles.map(f => f.name));
+                addFiles(newFiles);
+                
+                // After adding files, ensure they're still in the input
+                // This is important for when files are selected via click (not drag-and-drop)
+                setTimeout(() => {
+                    if (audioInput.files.length === 0 && selectedFiles.length > 0) {
+                        console.log('Files lost from input, restoring...');
+                        const dataTransfer = new DataTransfer();
+                        selectedFiles.forEach(file => {
+                            dataTransfer.items.add(file);
+                        });
+                        audioInput.files = dataTransfer.files;
+                        console.log('Files restored, input now has', audioInput.files.length, 'files');
+                    }
+                }, 100);
+            }
         });
         
         // Drag and drop events
@@ -293,6 +312,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         function addFiles(files) {
+            console.log('addFiles called with', files.length, 'files');
+            if (!files || files.length === 0) {
+                console.warn('addFiles called with no files');
+                return;
+            }
+            
             files.forEach(file => {
                 // Check if file is not already in the array
                 const exists = selectedFiles.some(f => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified);
@@ -300,21 +325,41 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Validate file type
                     if (file.type === 'audio/mpeg' || file.type === 'audio/mp3' || file.name.toLowerCase().endsWith('.mp3')) {
                         selectedFiles.push(file);
+                        console.log('Added file:', file.name);
+                    } else {
+                        console.warn('Skipped file (not MP3):', file.name, 'Type:', file.type);
                     }
+                } else {
+                    console.log('File already exists:', file.name);
                 }
             });
+            
+            console.log('Total selected files:', selectedFiles.length);
             updateFileList();
         }
         
         function updateFileList() {
+            console.log('updateFileList called. selectedFiles:', selectedFiles.length);
             fileList.innerHTML = '';
             
             // Update the file input with remaining files
             const dataTransfer = new DataTransfer();
-            selectedFiles.forEach(file => {
-                dataTransfer.items.add(file);
+            selectedFiles.forEach((file, index) => {
+                try {
+                    dataTransfer.items.add(file);
+                    console.log('Added file to DataTransfer:', index, file.name);
+                } catch (e) {
+                    console.error('Error adding file to DataTransfer:', e, file);
+                }
             });
             audioInput.files = dataTransfer.files;
+            
+            console.log('File input now has', audioInput.files.length, 'files');
+            
+            // Verify files were set correctly
+            if (audioInput.files.length !== selectedFiles.length) {
+                console.warn('Warning: File count mismatch. Expected:', selectedFiles.length, 'Got:', audioInput.files.length);
+            }
             
             // Update hidden inputs for song names
             const namesContainer = document.getElementById('song-names-container');
@@ -323,6 +368,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             if (selectedFiles.length > 0) {
+                console.log('Displaying', selectedFiles.length, 'files in the file list');
                 const fileCount = document.createElement('div');
                 fileCount.className = 'text-sm text-white font-medium mb-3';
                 fileCount.textContent = `Selected ${selectedFiles.length} file(s). Edit song names below:`;
