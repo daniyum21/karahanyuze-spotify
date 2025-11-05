@@ -35,7 +35,7 @@
                         @elseif($song->playlists && $song->playlists->count() > 0)
                             Playlist
                         @else
-                            Traditional Karahanyuze
+                            Indirimbo
                         @endif
                     </span>
                 </div>
