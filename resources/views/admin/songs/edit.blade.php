@@ -332,9 +332,6 @@ document.addEventListener('DOMContentLoaded', function() {
             musicPlayer.classList.remove('hidden');
         }
         
-        // Update bottom player with song info
-        updateBottomPlayer();
-        
         // Wait a bit for the player to be initialized, then auto-play
         setTimeout(function() {
             const player = document.getElementById('bottom-audio-player');

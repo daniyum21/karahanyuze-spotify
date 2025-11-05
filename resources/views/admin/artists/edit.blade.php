@@ -175,29 +175,48 @@
             @if($artist->songs->count() > 0)
             <div class="mt-12">
                 <label class="block text-sm font-medium text-white mb-2">Songs by {{ $artist->StageName }}</label>
-                <div class="max-h-64 overflow-y-auto bg-zinc-800 border border-zinc-700 rounded-lg p-4 mb-4">
+                <p class="text-xs text-zinc-400 mb-3">Click on any song to play it in the music player</p>
+                <div class="max-h-96 overflow-y-auto bg-zinc-800 border border-zinc-700 rounded-lg p-4 mb-4">
                     <div class="space-y-2">
-                        @foreach($artist->songs as $artistSong)
-                        <div class="flex items-center justify-between gap-3 p-3 bg-zinc-700 rounded-lg">
-                            <div class="flex items-center gap-3 flex-1">
+                        @foreach($artist->songs as $index => $artistSong)
+                        <div 
+                            id="song-item-{{ $artistSong->IndirimboID }}"
+                            class="flex items-center justify-between gap-3 p-3 bg-zinc-700 rounded-lg hover:bg-zinc-600 transition-colors cursor-pointer"
+                            onclick="playSongFromList({{ $artistSong->IndirimboID }}, {{ $index }})"
+                        >
+                            <div class="flex items-center gap-3 flex-1 min-w-0">
                                 <input 
                                     type="checkbox" 
                                     name="songs[]" 
                                     value="{{ $artistSong->IndirimboID }}"
                                     checked
-                                    class="w-5 h-5 text-green-500 bg-zinc-800 border-zinc-700 rounded focus:ring-green-500"
+                                    onclick="event.stopPropagation();"
+                                    class="w-5 h-5 text-green-500 bg-zinc-800 border-zinc-700 rounded focus:ring-green-500 flex-shrink-0"
                                 >
-                                <div class="flex-1">
-                                    <div class="text-white font-medium">{{ $artistSong->IndirimboName }}</div>
+                                @if($artistSong->ProfilePicture)
+                                <img 
+                                    src="{{ \App\Helpers\ImageHelper::getImageUrl($artistSong->ProfilePicture) }}" 
+                                    alt="{{ $artistSong->IndirimboName }}"
+                                    class="w-12 h-12 rounded object-cover flex-shrink-0"
+                                >
+                                @else
+                                <div class="w-12 h-12 bg-zinc-800 rounded flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-6 h-6 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                                    </svg>
+                                </div>
+                                @endif
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-white font-medium truncate">{{ $artistSong->IndirimboName }}</div>
                                     @if($artistSong->artist)
-                                        <div class="text-sm text-zinc-400">{{ $artistSong->artist->StageName }}</div>
+                                        <div class="text-sm text-zinc-400 truncate">{{ $artistSong->artist->StageName }}</div>
                                     @endif
                                 </div>
                             </div>
                             <button 
                                 type="button" 
-                                onclick="removeSongFromArtist(this, '{{ $artistSong->IndirimboID }}')"
-                                class="text-red-400 hover:text-red-300 transition-colors text-sm font-medium px-3 py-1"
+                                onclick="event.stopPropagation(); removeSongFromArtist(this, '{{ $artistSong->IndirimboID }}')"
+                                class="text-red-400 hover:text-red-300 transition-colors text-sm font-medium px-3 py-1 flex-shrink-0"
                                 title="Remove from artist"
                             >
                                 Remove
@@ -248,6 +267,95 @@
         </div>
     </div>
 </div>
+
+@if($artist->songs->count() > 0)
+@php
+    $songList = $artist->songs->map(function($song) {
+        return [
+            'id' => $song->IndirimboID,
+            'name' => $song->IndirimboName,
+            'image' => \App\Helpers\ImageHelper::getImageUrl($song->ProfilePicture),
+            'artist' => $song->artist ? $song->artist->StageName : ($song->orchestra ? $song->orchestra->OrchestreName : ($song->itorero ? $song->itorero->ItoreroName : 'Unknown')),
+            'audioUrl' => route('indirimbo.audio', $song->IndirimboID)
+        ];
+    })->toArray();
+@endphp
+<script>
+    // Store the song list for this artist page
+    window.artistSongList = @json($songList);
+    
+    window.currentSongIndex = -1;
+
+    window.playSongFromList = function(songId, index) {
+        const song = window.artistSongList[index];
+        if (!song) return;
+
+        // Remove highlight from all songs
+        document.querySelectorAll('[id^="song-item-"]').forEach(function(item) {
+            item.classList.remove('bg-blue-500/20', 'border-blue-500', 'border');
+            item.classList.add('bg-zinc-700');
+        });
+
+        // Highlight the current song
+        const currentSongItem = document.getElementById('song-item-' + songId);
+        if (currentSongItem) {
+            currentSongItem.classList.remove('bg-zinc-700');
+            currentSongItem.classList.add('bg-blue-500/20', 'border', 'border-blue-500');
+        }
+
+        window.currentSongIndex = index;
+
+        // Show the music player
+        const musicPlayer = document.getElementById('music-player');
+        if (musicPlayer) {
+            musicPlayer.classList.remove('hidden');
+        }
+
+        // Update player info
+        const playerImage = document.getElementById('player-image');
+        const playerTitle = document.getElementById('player-title');
+        const playerArtist = document.getElementById('player-artist');
+        const playerAudio = document.getElementById('bottom-audio-player');
+
+        if (playerImage) playerImage.src = song.image;
+        if (playerTitle) playerTitle.textContent = song.name;
+        if (playerArtist) playerArtist.textContent = song.artist;
+        if (playerAudio) {
+            // Re-initialize player events to ensure ended event is attached
+            if (typeof window.initializePlayerEvents === 'function') {
+                window.initializePlayerEvents();
+                // Get fresh reference after re-initialization
+                const freshPlayer = document.getElementById('bottom-audio-player');
+                if (freshPlayer) {
+                    freshPlayer.src = song.audioUrl;
+                    freshPlayer.currentTime = 0; // Reset to beginning
+                    freshPlayer.load();
+                    
+                    // Wait for audio to be ready before playing
+                    freshPlayer.addEventListener('canplay', function playWhenReady() {
+                        freshPlayer.play().catch(function(error) {
+                            console.log('Auto-play prevented (browser policy):', error);
+                        });
+                        freshPlayer.removeEventListener('canplay', playWhenReady);
+                    }, { once: true });
+                }
+            } else {
+                playerAudio.src = song.audioUrl;
+                playerAudio.currentTime = 0; // Reset to beginning
+                playerAudio.load();
+                
+                // Wait for audio to be ready before playing
+                playerAudio.addEventListener('canplay', function playWhenReady() {
+                    playerAudio.play().catch(function(error) {
+                        console.log('Auto-play prevented (browser policy):', error);
+                    });
+                    playerAudio.removeEventListener('canplay', playWhenReady);
+                }, { once: true });
+            }
+        }
+    };
+</script>
+@endif
 
 <script>
 function removeSongFromArtist(button, songId) {
