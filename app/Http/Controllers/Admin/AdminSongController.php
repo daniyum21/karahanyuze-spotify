@@ -445,13 +445,20 @@ class AdminSongController extends Controller
         $artist = Artist::where('UUID', $uuid)->firstOrFail();
         $statuses = SongStatus::orderBy('StatusName', 'asc')->get();
         
+        // Get existing songs for this artist
+        $songs = Song::where('UmuhanziID', $artist->UmuhanziID)
+            ->with(['status', 'user'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+        
         return view('admin.songs.create-for-entity', [
             'entity' => $artist,
             'entityType' => 'artist',
             'entityName' => $artist->StageName,
             'entityId' => $artist->UmuhanziID,
             'entityIdField' => 'UmuhanziID',
-            'statuses' => $statuses
+            'statuses' => $statuses,
+            'songs' => $songs
         ]);
     }
 
@@ -474,13 +481,20 @@ class AdminSongController extends Controller
         $orchestra = Orchestra::where('UUID', $uuid)->firstOrFail();
         $statuses = SongStatus::orderBy('StatusName', 'asc')->get();
         
+        // Get existing songs for this orchestra
+        $songs = Song::where('OrchestreID', $orchestra->OrchestreID)
+            ->with(['status', 'user'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+        
         return view('admin.songs.create-for-entity', [
             'entity' => $orchestra,
             'entityType' => 'orchestra',
             'entityName' => $orchestra->OrchestreName,
             'entityId' => $orchestra->OrchestreID,
             'entityIdField' => 'OrchestreID',
-            'statuses' => $statuses
+            'statuses' => $statuses,
+            'songs' => $songs
         ]);
     }
 
@@ -503,13 +517,20 @@ class AdminSongController extends Controller
         $itorero = Itorero::where('UUID', $uuid)->firstOrFail();
         $statuses = SongStatus::orderBy('StatusName', 'asc')->get();
         
+        // Get existing songs for this itorero
+        $songs = Song::where('ItoreroID', $itorero->ItoreroID)
+            ->with(['status', 'user'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+        
         return view('admin.songs.create-for-entity', [
             'entity' => $itorero,
             'entityType' => 'itorero',
             'entityName' => $itorero->ItoreroName,
             'entityId' => $itorero->ItoreroID,
             'entityIdField' => 'ItoreroID',
-            'statuses' => $statuses
+            'statuses' => $statuses,
+            'songs' => $songs
         ]);
     }
 
@@ -622,8 +643,29 @@ class AdminSongController extends Controller
                     $song->IsFeatured = false;
                     $song->IsPrivate = false; // Set default value for IsPrivate
                     $song->UUID = (string) Str::uuid();
-                    // Set the entity ID using the correct field name
-                    $song->setAttribute($entityIdField, $entityId);
+                    
+                    // Set the entity ID and explicitly clear other entity fields
+                    // This ensures a song only belongs to one entity (artist, orchestra, or itorero)
+                    // We must explicitly set all three fields even if null, because MySQL requires it
+                    if ($entityIdField === 'UmuhanziID') {
+                        $song->UmuhanziID = $entityId;
+                        $song->OrchestreID = null;
+                        $song->ItoreroID = null;
+                    } elseif ($entityIdField === 'OrchestreID') {
+                        $song->UmuhanziID = null;
+                        $song->OrchestreID = $entityId;
+                        $song->ItoreroID = null;
+                    } elseif ($entityIdField === 'ItoreroID') {
+                        $song->UmuhanziID = null;
+                        $song->OrchestreID = null;
+                        $song->ItoreroID = $entityId;
+                    } else {
+                        // Fallback: set all to null if entityIdField is unknown
+                        $song->UmuhanziID = null;
+                        $song->OrchestreID = null;
+                        $song->ItoreroID = null;
+                    }
+                    
                     $song->UserID = auth()->id();
                     $song->ProfilePicture = ''; // Set default empty string for ProfilePicture
 
@@ -642,6 +684,8 @@ class AdminSongController extends Controller
                         $song->ProfilePicture = 'Pictures/' . $imageFileName;
                     }
 
+                    // Save using Eloquent - all fields are already set on the model
+                    // The fields are in fillable, so they should be included in the insert
                     $song->save();
                     $uploadedSongs[] = $song->IndirimboName;
                 } catch (\Exception $e) {

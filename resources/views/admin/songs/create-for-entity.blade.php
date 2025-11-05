@@ -137,6 +137,107 @@
                     </div>
                 </div>
             </form>
+            
+            <!-- Existing Songs Section -->
+            @if(isset($songs) && $songs->count() > 0)
+            <div class="mt-12">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-white">Existing Songs for {{ $entityName }}</h2>
+                    <span class="text-zinc-400 text-sm">{{ $songs->total() }} song(s) total</span>
+                </div>
+                
+                <div class="bg-zinc-900 rounded-lg overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-zinc-800">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Song</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Uploaded</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-zinc-800">
+                                @foreach($songs as $song)
+                                <tr class="hover:bg-zinc-800/50 transition-colors">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center gap-4">
+                                            @if($song->ProfilePicture)
+                                            <img 
+                                                src="{{ \App\Helpers\ImageHelper::getImageUrl($song->ProfilePicture) }}" 
+                                                alt="{{ $song->IndirimboName }}"
+                                                class="w-12 h-12 object-cover rounded"
+                                            >
+                                            @else
+                                            <div class="w-12 h-12 bg-zinc-800 rounded flex items-center justify-center">
+                                                <svg class="w-6 h-6 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                                                </svg>
+                                            </div>
+                                            @endif
+                                            <div>
+                                                <div class="text-white font-medium">{{ $song->IndirimboName }}</div>
+                                                @if($song->user)
+                                                <div class="text-xs text-zinc-400">By {{ $song->user->PublicName ?? $song->user->UserName }}</div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        @if($song->status)
+                                        <span class="px-2 py-1 text-xs font-semibold rounded
+                                            @if($song->status->StatusName === 'Approved' || $song->status->StatusName === 'approved') bg-green-500/20 text-green-400
+                                            @elseif($song->status->StatusName === 'Pending' || $song->status->StatusName === 'pending') bg-yellow-500/20 text-yellow-400
+                                            @else bg-zinc-500/20 text-zinc-400
+                                            @endif">
+                                            {{ $song->status->StatusName }}
+                                        </span>
+                                        @else
+                                        <span class="text-zinc-500 text-xs">Unknown</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
+                                        {{ $song->created_at ? $song->created_at->diffForHumans() : 'N/A' }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <div class="flex items-center gap-3">
+                                            <a 
+                                                href="{{ route('admin.songs.edit', $song->UUID) }}" 
+                                                class="text-blue-400 hover:text-blue-300 transition-colors"
+                                            >
+                                                Edit
+                                            </a>
+                                            <a 
+                                                href="{{ route('indirimbo.show', [$song->slug, $song->UUID]) }}" 
+                                                target="_blank"
+                                                class="text-green-400 hover:text-green-300 transition-colors"
+                                            >
+                                                View
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    @if($songs->hasPages())
+                    <div class="px-6 py-4 bg-zinc-800 border-t border-zinc-700">
+                        {{ $songs->links() }}
+                    </div>
+                    @endif
+                </div>
+            </div>
+            @else
+            <div class="mt-12 text-center py-12 bg-zinc-900 rounded-lg">
+                <svg class="w-16 h-16 text-zinc-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                </svg>
+                <p class="text-zinc-400 text-lg mb-2">No songs uploaded yet</p>
+                <p class="text-zinc-500 text-sm">Upload your first song using the form above</p>
+            </div>
+            @endif
         </div>
     </div>
 </div>
