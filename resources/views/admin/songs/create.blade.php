@@ -48,24 +48,20 @@
                     <!-- Description -->
                     <div>
                         <label for="Description" class="block text-sm font-medium text-white mb-2">Description</label>
+                        <div id="Description" style="min-height: 200px;">{!! old('Description') !!}</div>
                         <textarea 
-                            id="Description" 
                             name="Description" 
-                            rows="4"
-                            class="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                            placeholder="Enter song description"
+                            style="display: none;"
                         >{{ old('Description') }}</textarea>
                     </div>
 
                     <!-- Lyrics -->
                     <div>
                         <label for="Lyrics" class="block text-sm font-medium text-white mb-2">Lyrics</label>
+                        <div id="Lyrics" style="min-height: 400px;">{!! old('Lyrics') !!}</div>
                         <textarea 
-                            id="Lyrics" 
                             name="Lyrics" 
-                            rows="8"
-                            class="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                            placeholder="Enter song lyrics"
+                            style="display: none;"
                         >{{ old('Lyrics') }}</textarea>
                     </div>
 
@@ -82,11 +78,14 @@
                                 >
                                     <option value="">Select an artist</option>
                                     @foreach($artists as $artist)
-                                        <option value="{{ $artist->UmuhanziID }}" {{ old('UmuhanziID') == $artist->UmuhanziID ? 'selected' : '' }}>
+                                        <option value="{{ $artist->UmuhanziID }}" {{ (old('UmuhanziID') == $artist->UmuhanziID || (isset($selectedArtist) && $selectedArtist && $selectedArtist->UmuhanziID == $artist->UmuhanziID)) ? 'selected' : '' }}>
                                             {{ $artist->StageName }}
                                         </option>
                                     @endforeach
                                 </select>
+                                @if(isset($selectedArtist) && $selectedArtist)
+                                <p class="text-xs text-green-400 mt-1">✓ Artist "{{ $selectedArtist->StageName }}" is pre-selected</p>
+                                @endif
                             </div>
 
                             <div>
@@ -98,11 +97,14 @@
                                 >
                                     <option value="">Select an orchestra</option>
                                     @foreach($orchestras as $orchestra)
-                                        <option value="{{ $orchestra->OrchestreID }}" {{ old('OrchestreID') == $orchestra->OrchestreID ? 'selected' : '' }}>
+                                        <option value="{{ $orchestra->OrchestreID }}" {{ (old('OrchestreID') == $orchestra->OrchestreID || (isset($selectedOrchestra) && $selectedOrchestra && $selectedOrchestra->OrchestreID == $orchestra->OrchestreID)) ? 'selected' : '' }}>
                                             {{ $orchestra->OrchestreName }}
                                         </option>
                                     @endforeach
                                 </select>
+                                @if(isset($selectedOrchestra) && $selectedOrchestra)
+                                <p class="text-xs text-green-400 mt-1">✓ Orchestra "{{ $selectedOrchestra->OrchestreName }}" is pre-selected</p>
+                                @endif
                             </div>
 
                             <div>
@@ -114,11 +116,14 @@
                                 >
                                     <option value="">Select an itorero</option>
                                     @foreach($itoreros as $itorero)
-                                        <option value="{{ $itorero->ItoreroID }}" {{ old('ItoreroID') == $itorero->ItoreroID ? 'selected' : '' }}>
+                                        <option value="{{ $itorero->ItoreroID }}" {{ (old('ItoreroID') == $itorero->ItoreroID || (isset($selectedItorero) && $selectedItorero && $selectedItorero->ItoreroID == $itorero->ItoreroID)) ? 'selected' : '' }}>
                                             {{ $itorero->ItoreroName }}
                                         </option>
                                     @endforeach
                                 </select>
+                                @if(isset($selectedItorero) && $selectedItorero)
+                                <p class="text-xs text-green-400 mt-1">✓ Itorero "{{ $selectedItorero->ItoreroName }}" is pre-selected</p>
+                                @endif
                             </div>
                         </div>
                         <p class="text-xs text-zinc-500 mt-2">Select one owner (artist, orchestra, or itorero)</p>
@@ -202,5 +207,103 @@
         </div>
     </div>
 </div>
+
+<!-- Quill.js WYSIWYG Editor (Free & Open Source) -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<style>
+    .ql-editor {
+        min-height: 300px;
+        background-color: #18181b;
+        color: #fff;
+    }
+    .ql-container {
+        background-color: #18181b;
+        color: #fff;
+        border-color: #3f3f46;
+    }
+    .ql-toolbar {
+        background-color: #27272a;
+        border-color: #3f3f46;
+    }
+    .ql-toolbar .ql-stroke {
+        stroke: #fff;
+    }
+    .ql-toolbar .ql-fill {
+        fill: #fff;
+    }
+    .ql-toolbar .ql-picker-label {
+        color: #fff;
+    }
+    .ql-toolbar button:hover, .ql-toolbar button.ql-active {
+        color: #22c55e;
+    }
+    .ql-toolbar .ql-stroke.ql-thin {
+        stroke: #fff;
+    }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Quill for Description
+    if (document.getElementById('Description')) {
+        const descriptionQuill = new Quill('#Description', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'color': [] }, { 'background': [] }],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    [{ 'align': [] }],
+                    ['link'],
+                    ['clean']
+                ]
+            },
+            placeholder: 'Enter song description'
+        });
+        
+        // Sync Quill content to textarea before form submission
+        const descriptionForm = document.querySelector('form');
+        if (descriptionForm) {
+            descriptionForm.addEventListener('submit', function() {
+                const descriptionInput = document.querySelector('textarea[name="Description"]');
+                if (descriptionInput) {
+                    descriptionInput.value = descriptionQuill.root.innerHTML;
+                }
+            });
+        }
+    }
+    
+    // Initialize Quill for Lyrics
+    if (document.getElementById('Lyrics')) {
+        const lyricsQuill = new Quill('#Lyrics', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'color': [] }, { 'background': [] }],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    [{ 'align': [] }],
+                    ['link'],
+                    ['clean']
+                ]
+            },
+            placeholder: 'Enter song lyrics'
+        });
+        
+        // Sync Quill content to textarea before form submission
+        const lyricsForm = document.querySelector('form');
+        if (lyricsForm) {
+            lyricsForm.addEventListener('submit', function() {
+                const lyricsInput = document.querySelector('textarea[name="Lyrics"]');
+                if (lyricsInput) {
+                    lyricsInput.value = lyricsQuill.root.innerHTML;
+                }
+            });
+        }
+    }
+});
+</script>
 @endsection
 

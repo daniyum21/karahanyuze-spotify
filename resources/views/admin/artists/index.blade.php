@@ -3,6 +3,10 @@
 @section('title', 'Artists - Admin')
 
 @section('content')
+@php
+    $sortBy = $sortBy ?? 'created_at';
+    $sortDirection = $sortDirection ?? 'desc';
+@endphp
 <div class="min-h-screen bg-gradient-to-b from-black via-blue-950 to-black">
     <div class="container mx-auto px-4 py-12">
         <div class="mb-8 flex items-center justify-between">
@@ -33,10 +37,86 @@
                 <thead class="bg-zinc-800">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Artist</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Stage Name</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Email</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Songs</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Featured</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                            <a href="{{ route('admin.artists.index', ['sort' => 'StageName', 'direction' => $sortBy === 'StageName' && $sortDirection === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-2 hover:text-white transition-colors">
+                                Stage Name
+                                @if($sortBy === 'StageName')
+                                    @if($sortDirection === 'asc')
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                                        </svg>
+                                    @else
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    @endif
+                                @endif
+                            </a>
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                            <a href="{{ route('admin.artists.index', ['sort' => 'Email', 'direction' => $sortBy === 'Email' && $sortDirection === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-2 hover:text-white transition-colors">
+                                Email
+                                @if($sortBy === 'Email')
+                                    @if($sortDirection === 'asc')
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                                        </svg>
+                                    @else
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    @endif
+                                @endif
+                            </a>
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                            <a href="{{ route('admin.artists.index', ['sort' => 'songs_count', 'direction' => $sortBy === 'songs_count' && $sortDirection === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-2 hover:text-white transition-colors">
+                                Songs
+                                @if($sortBy === 'songs_count')
+                                    @if($sortDirection === 'asc')
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                                        </svg>
+                                    @else
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    @endif
+                                @endif
+                            </a>
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                            <a href="{{ route('admin.artists.index', ['sort' => 'IsFeatured', 'direction' => $sortBy === 'IsFeatured' && $sortDirection === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-2 hover:text-white transition-colors">
+                                Featured
+                                @if($sortBy === 'IsFeatured')
+                                    @if($sortDirection === 'asc')
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                                        </svg>
+                                    @else
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    @endif
+                                @endif
+                            </a>
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                            <a href="{{ route('admin.artists.index', ['sort' => 'created_at', 'direction' => $sortBy === 'created_at' && $sortDirection === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-2 hover:text-white transition-colors">
+                                Created
+                                @if($sortBy === 'created_at')
+                                    @if($sortDirection === 'asc')
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                                        </svg>
+                                    @else
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    @endif
+                                @endif
+                            </a>
+                        </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
@@ -60,7 +140,7 @@
                                 @endif
                                 <div>
                                     <div class="text-white font-medium">{{ $artist->FirstName }} {{ $artist->LastName }}</div>
-                                    <div class="text-sm text-zinc-400">{{ $artist->created_at->format('M d, Y') }}</div>
+                                    <div class="text-sm text-zinc-400">{{ $artist->created_at ? $artist->created_at->format('M d, Y') : 'N/A' }}</div>
                                 </div>
                             </div>
                         </td>

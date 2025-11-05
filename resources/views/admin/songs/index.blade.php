@@ -8,7 +8,17 @@
         <div class="mb-8 flex items-center justify-between">
             <div>
                 <h1 class="text-4xl font-bold text-white mb-2">Songs</h1>
-                <p class="text-zinc-400">Manage all songs in the Karahanyuze collection</p>
+                <p class="text-zinc-400">
+                    @if($filterStatus === 'pending')
+                        Pending Songs - Review and approve
+                    @elseif($filterStatus === 'approved')
+                        Approved Songs - Manage approved songs
+                    @elseif($filterFeatured === 'yes')
+                        Featured Songs - Add or remove featured status
+                    @else
+                        Manage all songs in the Karahanyuze collection
+                    @endif
+                </p>
             </div>
             <a 
                 href="{{ route('admin.songs.create') }}" 
@@ -18,6 +28,22 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
                 Upload New Song
+            </a>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="mb-6 flex gap-3 border-b border-zinc-700">
+            <a href="{{ route('admin.songs.index') }}" class="px-4 py-2 {{ $filterStatus === 'all' && $filterFeatured === 'all' ? 'border-b-2 border-green-500 text-green-500' : 'text-zinc-400 hover:text-white' }} font-medium transition-colors">
+                All Songs
+            </a>
+            <a href="{{ route('admin.songs.index', ['status' => 'pending']) }}" class="px-4 py-2 {{ $filterStatus === 'pending' ? 'border-b-2 border-yellow-500 text-yellow-500' : 'text-zinc-400 hover:text-white' }} font-medium transition-colors">
+                Pending
+            </a>
+            <a href="{{ route('admin.songs.index', ['status' => 'approved']) }}" class="px-4 py-2 {{ $filterStatus === 'approved' ? 'border-b-2 border-green-500 text-green-500' : 'text-zinc-400 hover:text-white' }} font-medium transition-colors">
+                Approved
+            </a>
+            <a href="{{ route('admin.songs.index', ['featured' => 'yes']) }}" class="px-4 py-2 {{ $filterFeatured === 'yes' ? 'border-b-2 border-purple-500 text-purple-500' : 'text-zinc-400 hover:text-white' }} font-medium transition-colors">
+                Featured
             </a>
         </div>
 
@@ -34,6 +60,9 @@
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Song</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Owner</th>
+                        @if($filterStatus === 'pending')
+                        <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Submitted By</th>
+                        @endif
                         <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Status</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Featured</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Actions</th>
@@ -59,23 +88,38 @@
                                 @endif
                                 <div>
                                     <div class="text-white font-medium">{{ $song->IndirimboName }}</div>
-                                    <div class="text-sm text-zinc-400">{{ $song->created_at->format('M d, Y') }}</div>
+                                    <div class="text-sm text-zinc-400">{{ $song->created_at ? $song->created_at->format('M d, Y') : 'N/A' }}</div>
                                 </div>
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-white">
                                 @if($song->artist)
-                                    {{ $song->artist->StageName }}
+                                    <span class="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs font-semibold mb-1 inline-block">Artist</span>
+                                    <div class="text-sm">{{ $song->artist->StageName }}</div>
                                 @elseif($song->orchestra)
-                                    {{ $song->orchestra->OrchestreName }}
+                                    <span class="px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs font-semibold mb-1 inline-block">Orchestra</span>
+                                    <div class="text-sm">{{ $song->orchestra->OrchestreName }}</div>
                                 @elseif($song->itorero)
-                                    {{ $song->itorero->ItoreroName }}
+                                    <span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs font-semibold mb-1 inline-block">Itorero</span>
+                                    <div class="text-sm">{{ $song->itorero->ItoreroName }}</div>
                                 @else
                                     <span class="text-zinc-500">No owner</span>
                                 @endif
                             </div>
                         </td>
+                        @if($filterStatus === 'pending')
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-white">
+                                @if($song->user)
+                                    <div class="font-medium">{{ $song->user->PublicName ?? $song->user->FirstName . ' ' . $song->user->LastName }}</div>
+                                    <div class="text-sm text-zinc-400">{{ $song->user->Email ?? '' }}</div>
+                                @else
+                                    <span class="text-zinc-500 text-sm">Unknown</span>
+                                @endif
+                            </div>
+                        </td>
+                        @endif
                         <td class="px-6 py-4 whitespace-nowrap">
                             @if($song->status)
                                 <span class="px-2 py-1 text-xs rounded-full {{ $song->status->StatusID == 2 ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400' }}">
@@ -86,20 +130,31 @@
                             @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            @if($song->IsFeatured)
-                                <span class="px-2 py-1 text-xs rounded-full bg-blue-500/20 text-blue-400">Featured</span>
-                            @else
-                                <span class="text-zinc-500 text-sm">No</span>
-                            @endif
+                            <form action="{{ route('admin.songs.toggle-featured', $song->UUID) }}" method="POST" class="inline">
+                                @csrf
+                                @method('PATCH')
+                                <button type="submit" class="{{ $song->IsFeatured ? 'px-2 py-1 text-xs rounded-full bg-purple-500/20 text-purple-400 hover:bg-purple-500/30' : 'px-2 py-1 text-xs rounded-full bg-zinc-700/50 text-zinc-400 hover:bg-purple-500/20 hover:text-purple-400' }} transition-colors">
+                                    {{ $song->IsFeatured ? 'Featured' : 'Not Featured' }}
+                                </button>
+                            </form>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div class="flex items-center gap-3">
+                                @if($filterStatus === 'pending')
+                                <a 
+                                    href="{{ route('admin.songs.edit', $song->UUID) }}?status=pending" 
+                                    class="text-green-400 hover:text-green-300 transition-colors"
+                                >
+                                    Review
+                                </a>
+                                @else
                                 <a 
                                     href="{{ route('admin.songs.edit', $song->UUID) }}" 
                                     class="text-green-400 hover:text-green-300 transition-colors"
                                 >
                                     Edit
                                 </a>
+                                @endif
                                 <form 
                                     action="{{ route('admin.songs.destroy', $song->UUID) }}" 
                                     method="POST" 

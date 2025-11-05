@@ -22,6 +22,7 @@
                     <input
                         type="text"
                         name="q"
+                        value="{{ request('q') }}"
                         placeholder="Shakira indirimbo..."
                         class="w-full pl-10 pr-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                     />
@@ -39,7 +40,7 @@
                     Admin
                 </a>
                 @else
-                <a href="{{ route('user.dashboard') }}" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg text-white font-medium transition-colors text-sm">
+                <a href="{{ route('user.dashboard') }}" class="px-4 py-2 bg-green-500 hover:bg-green-600 rounded-lg text-white font-medium transition-colors text-sm">
                     Dashboard
                 </a>
                 @endif
@@ -81,6 +82,7 @@
                     <input
                         type="text"
                         name="q"
+                        value="{{ request('q') }}"
                         placeholder="Shakira indirimbo..."
                         class="w-full pl-10 pr-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                     />
@@ -93,6 +95,7 @@
                 <a href="{{ route('itorero.index') }}" class="px-4 py-3 rounded-lg transition-colors font-medium {{ request()->routeIs('itorero.*') ? 'bg-green-500/20 text-green-500' : 'text-white hover:bg-zinc-800' }}">Itorero</a>
                 <a href="{{ route('orchestre.index') }}" class="px-4 py-3 rounded-lg transition-colors font-medium {{ request()->routeIs('orchestre.*') ? 'bg-green-500/20 text-green-500' : 'text-white hover:bg-zinc-800' }}">Orchestre</a>
                 <a href="{{ route('playlists.index') }}" class="px-4 py-3 rounded-lg transition-colors font-medium {{ request()->routeIs('playlists.*') ? 'bg-green-500/20 text-green-500' : 'text-white hover:bg-zinc-800' }}">Playlists</a>
+                <a href="{{ route('forum.index') }}" class="px-4 py-3 rounded-lg transition-colors font-medium {{ request()->routeIs('forum.*') ? 'bg-green-500/20 text-green-500' : 'text-white hover:bg-zinc-800' }}">Forum</a>
                 <a href="{{ route('contact') }}" class="px-4 py-3 rounded-lg transition-colors font-medium {{ request()->routeIs('contact') ? 'bg-green-500/20 text-green-500' : 'text-white hover:bg-zinc-800' }}">Contact Us</a>
             </nav>
 
@@ -107,7 +110,7 @@
                     Admin Dashboard
                 </a>
                 @else
-                <a href="{{ route('user.dashboard') }}" class="px-4 py-3 bg-blue-500 hover:bg-blue-600 rounded-lg text-white font-medium transition-colors text-center">
+                <a href="{{ route('user.dashboard') }}" class="px-4 py-3 bg-green-500 hover:bg-green-600 rounded-lg text-white font-medium transition-colors text-center">
                     Dashboard
                 </a>
                 @endif
@@ -134,6 +137,7 @@
             <a href="{{ route('itorero.index') }}" class="transition-colors font-medium {{ request()->routeIs('itorero.*') ? 'text-green-500' : 'text-white hover:text-green-500' }}">Itorero</a>
             <a href="{{ route('orchestre.index') }}" class="transition-colors font-medium {{ request()->routeIs('orchestre.*') ? 'text-green-500' : 'text-white hover:text-green-500' }}">Orchestre</a>
             <a href="{{ route('playlists.index') }}" class="transition-colors font-medium {{ request()->routeIs('playlists.*') ? 'text-green-500' : 'text-white hover:text-green-500' }}">Playlists</a>
+            <a href="{{ route('forum.index') }}" class="transition-colors font-medium {{ request()->routeIs('forum.*') ? 'text-green-500' : 'text-white hover:text-green-500' }}">Forum</a>
             <a href="{{ route('contact') }}" class="transition-colors font-medium {{ request()->routeIs('contact') ? 'text-green-500' : 'text-white hover:text-green-500' }}">Contact Us</a>
         </div>
     </div>
@@ -145,6 +149,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const mobileMenu = document.getElementById('mobile-menu');
     const menuIcon = document.getElementById('menu-icon');
     const closeIcon = document.getElementById('close-icon');
+
+    // Hide hamburger menu on desktop
+    function updateMenuVisibility() {
+        if (window.innerWidth >= 768) {
+            if (mobileMenuToggle) {
+                mobileMenuToggle.style.display = 'none';
+            }
+            if (mobileMenu) {
+                mobileMenu.classList.add('hidden');
+            }
+        } else {
+            if (mobileMenuToggle) {
+                mobileMenuToggle.style.display = 'block';
+            }
+        }
+    }
+
+    // Initial check
+    updateMenuVisibility();
+
+    // Update on resize
+    window.addEventListener('resize', updateMenuVisibility);
 
     if (mobileMenuToggle && mobileMenu) {
         mobileMenuToggle.addEventListener('click', function() {

@@ -26,6 +26,7 @@
                     <input
                         type="text"
                         name="q"
+                        value="{{ request('q') }}"
                         placeholder="Search songs, artists, playlists..."
                         class="w-full pl-14 pr-4 py-4 bg-zinc-900/80 border-2 border-blue-500 rounded-lg text-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-lg backdrop-blur-sm"
                     />

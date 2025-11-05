@@ -13,13 +13,34 @@ class AdminOrchestraController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $orchestras = Orchestra::withCount('songs')
-            ->latest()
-            ->paginate(20);
+        $sortBy = $request->get('sort', 'created_at');
+        $sortDirection = $request->get('direction', 'desc');
+        
+        // Validate sort direction
+        if (!in_array($sortDirection, ['asc', 'desc'])) {
+            $sortDirection = 'desc';
+        }
+        
+        // Validate sort column
+        $allowedSorts = ['OrchestreName', 'created_at', 'songs_count', 'IsFeatured'];
+        if (!in_array($sortBy, $allowedSorts)) {
+            $sortBy = 'created_at';
+        }
+        
+        $query = Orchestra::withCount('songs');
+        
+        // Apply sorting
+        if ($sortBy === 'songs_count') {
+            $query->orderBy('songs_count', $sortDirection);
+        } else {
+            $query->orderBy($sortBy, $sortDirection);
+        }
+        
+        $orchestras = $query->paginate(20)->withQueryString();
 
-        return view('admin.orchestras.index', compact('orchestras'));
+        return view('admin.orchestras.index', compact('orchestras', 'sortBy', 'sortDirection'));
     }
 
     /**
@@ -61,8 +82,9 @@ class AdminOrchestraController extends Controller
 
         $orchestra->save();
 
-        return redirect()->route('admin.orchestras.index')
-            ->with('success', 'Orchestra has been created successfully.');
+        // Redirect to nested song creation route: /admin/orchestre/{uuid}/songs
+        return redirect()->route('admin.orchestras.songs.create', ['uuid' => $orchestra->UUID])
+            ->with('success', 'Orchestra created successfully! Now add a song for this orchestra.');
     }
 
     /**
@@ -82,10 +104,17 @@ class AdminOrchestraController extends Controller
      */
     public function edit($uuid)
     {
-        $orchestra = Orchestra::where('UUID', $uuid)->firstOrFail();
-        $songs = Song::where('OrchestreID', $orchestra->OrchestreID)->paginate(20);
+        $orchestra = Orchestra::where('UUID', $uuid)
+            ->with('songs')
+            ->firstOrFail();
+        
+        $allSongs = Song::where('StatusID', 2)
+            ->with('artist')
+            ->latest()
+            ->get();
+        $orchestraSongIds = $orchestra->songs->pluck('IndirimboID')->toArray();
 
-        return view('admin.orchestras.edit', compact('orchestra', 'songs'));
+        return view('admin.orchestras.edit', compact('orchestra', 'allSongs', 'orchestraSongIds'));
     }
 
     /**
@@ -100,6 +129,8 @@ class AdminOrchestraController extends Controller
             'Description' => 'nullable|string',
             'IsFeatured' => 'boolean',
             'image' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',
+            'songs' => 'nullable|array',
+            'songs.*' => 'exists:Indirimbo,IndirimboID',
         ]);
 
         $orchestra->OrchestreName = $validated['OrchestreName'];
@@ -125,6 +156,28 @@ class AdminOrchestraController extends Controller
         }
 
         $orchestra->save();
+
+        // Handle song assignments
+        if ($request->has('songs')) {
+            $selectedSongIds = $validated['songs'];
+            
+            // Remove songs that are no longer selected (clear their orchestra association)
+            Song::where('OrchestreID', $orchestra->OrchestreID)
+                ->whereNotIn('IndirimboID', $selectedSongIds)
+                ->update(['OrchestreID' => null]);
+            
+            // Add songs that are newly selected (clear other entity associations first)
+            Song::whereIn('IndirimboID', $selectedSongIds)
+                ->update([
+                    'OrchestreID' => $orchestra->OrchestreID,
+                    'UmuhanziID' => null,  // Clear artist association
+                    'ItoreroID' => null    // Clear itorero association
+                ]);
+        } else {
+            // If no songs selected, remove all song associations
+            Song::where('OrchestreID', $orchestra->OrchestreID)
+                ->update(['OrchestreID' => null]);
+        }
 
         return redirect()->route('admin.orchestras.index')
             ->with('success', 'Orchestra has been updated successfully.');

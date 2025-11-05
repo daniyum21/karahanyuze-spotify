@@ -3,6 +3,10 @@
 @section('title', 'Orchestras - Admin')
 
 @section('content')
+@php
+    $sortBy = $sortBy ?? 'created_at';
+    $sortDirection = $sortDirection ?? 'desc';
+@endphp
 <div class="min-h-screen bg-gradient-to-b from-black via-blue-950 to-black">
     <div class="container mx-auto px-4 py-12">
         <div class="mb-8 flex items-center justify-between">
@@ -33,9 +37,70 @@
                 <thead class="bg-zinc-800">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Orchestra</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Name</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Songs</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Featured</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                            <a href="{{ route('admin.orchestras.index', ['sort' => 'OrchestreName', 'direction' => $sortBy === 'OrchestreName' && $sortDirection === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-2 hover:text-white transition-colors">
+                                Name
+                                @if($sortBy === 'OrchestreName')
+                                    @if($sortDirection === 'asc')
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                                        </svg>
+                                    @else
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    @endif
+                                @endif
+                            </a>
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                            <a href="{{ route('admin.orchestras.index', ['sort' => 'songs_count', 'direction' => $sortBy === 'songs_count' && $sortDirection === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-2 hover:text-white transition-colors">
+                                Songs
+                                @if($sortBy === 'songs_count')
+                                    @if($sortDirection === 'asc')
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                                        </svg>
+                                    @else
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    @endif
+                                @endif
+                            </a>
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                            <a href="{{ route('admin.orchestras.index', ['sort' => 'IsFeatured', 'direction' => $sortBy === 'IsFeatured' && $sortDirection === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-2 hover:text-white transition-colors">
+                                Featured
+                                @if($sortBy === 'IsFeatured')
+                                    @if($sortDirection === 'asc')
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                                        </svg>
+                                    @else
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    @endif
+                                @endif
+                            </a>
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                            <a href="{{ route('admin.orchestras.index', ['sort' => 'created_at', 'direction' => $sortBy === 'created_at' && $sortDirection === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-2 hover:text-white transition-colors">
+                                Created
+                                @if($sortBy === 'created_at')
+                                    @if($sortDirection === 'asc')
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                                        </svg>
+                                    @else
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    @endif
+                                @endif
+                            </a>
+                        </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
@@ -59,7 +124,7 @@
                                 @endif
                                 <div>
                                     <div class="text-white font-medium">{{ $orchestra->OrchestreName }}</div>
-                                    <div class="text-sm text-zinc-400">{{ $orchestra->created_at->format('M d, Y') }}</div>
+                                    <div class="text-sm text-zinc-400">{{ $orchestra->created_at ? $orchestra->created_at->format('M d, Y') : 'N/A' }}</div>
                                 </div>
                             </div>
                         </td>

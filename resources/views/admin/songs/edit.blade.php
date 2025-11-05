@@ -28,6 +28,12 @@
             @endif
 
             <form action="{{ route('admin.songs.update', $song->UUID) }}" method="POST" enctype="multipart/form-data" class="bg-zinc-900 rounded-lg p-8">
+                @if(request('status'))
+                <input type="hidden" name="status" value="{{ request('status') }}">
+                @endif
+                @if(request('featured'))
+                <input type="hidden" name="featured" value="{{ request('featured') }}">
+                @endif
                 @csrf
                 @method('PUT')
 
@@ -49,24 +55,20 @@
                     <!-- Description -->
                     <div>
                         <label for="Description" class="block text-sm font-medium text-white mb-2">Description</label>
+                        <div id="Description" style="min-height: 200px;">{!! old('Description', $song->Description) !!}</div>
                         <textarea 
-                            id="Description" 
                             name="Description" 
-                            rows="4"
-                            class="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                            placeholder="Enter song description"
+                            style="display: none;"
                         >{{ old('Description', $song->Description) }}</textarea>
                     </div>
 
                     <!-- Lyrics -->
                     <div>
                         <label for="Lyrics" class="block text-sm font-medium text-white mb-2">Lyrics</label>
+                        <div id="Lyrics" style="min-height: 400px;">{!! old('Lyrics', $song->Lyrics) !!}</div>
                         <textarea 
-                            id="Lyrics" 
                             name="Lyrics" 
-                            rows="8"
-                            class="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                            placeholder="Enter song lyrics"
+                            style="display: none;"
                         >{{ old('Lyrics', $song->Lyrics) }}</textarea>
                     </div>
 
@@ -226,5 +228,103 @@
         </div>
     </div>
 </div>
+
+<!-- Quill.js WYSIWYG Editor (Free & Open Source) -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<style>
+    .ql-editor {
+        min-height: 300px;
+        background-color: #18181b;
+        color: #fff;
+    }
+    .ql-container {
+        background-color: #18181b;
+        color: #fff;
+        border-color: #3f3f46;
+    }
+    .ql-toolbar {
+        background-color: #27272a;
+        border-color: #3f3f46;
+    }
+    .ql-toolbar .ql-stroke {
+        stroke: #fff;
+    }
+    .ql-toolbar .ql-fill {
+        fill: #fff;
+    }
+    .ql-toolbar .ql-picker-label {
+        color: #fff;
+    }
+    .ql-toolbar button:hover, .ql-toolbar button.ql-active {
+        color: #22c55e;
+    }
+    .ql-toolbar .ql-stroke.ql-thin {
+        stroke: #fff;
+    }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Quill for Description
+    if (document.getElementById('Description')) {
+        const descriptionQuill = new Quill('#Description', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'color': [] }, { 'background': [] }],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    [{ 'align': [] }],
+                    ['link'],
+                    ['clean']
+                ]
+            },
+            placeholder: 'Enter song description'
+        });
+        
+        // Sync Quill content to textarea before form submission
+        const descriptionForm = document.querySelector('form');
+        if (descriptionForm) {
+            descriptionForm.addEventListener('submit', function() {
+                const descriptionInput = document.querySelector('textarea[name="Description"]');
+                if (descriptionInput) {
+                    descriptionInput.value = descriptionQuill.root.innerHTML;
+                }
+            });
+        }
+    }
+    
+    // Initialize Quill for Lyrics
+    if (document.getElementById('Lyrics')) {
+        const lyricsQuill = new Quill('#Lyrics', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'color': [] }, { 'background': [] }],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    [{ 'align': [] }],
+                    ['link'],
+                    ['clean']
+                ]
+            },
+            placeholder: 'Enter song lyrics'
+        });
+        
+        // Sync Quill content to textarea before form submission
+        const lyricsForm = document.querySelector('form');
+        if (lyricsForm) {
+            lyricsForm.addEventListener('submit', function() {
+                const lyricsInput = document.querySelector('textarea[name="Lyrics"]');
+                if (lyricsInput) {
+                    lyricsInput.value = lyricsQuill.root.innerHTML;
+                }
+            });
+        }
+    }
+});
+</script>
 @endsection
 

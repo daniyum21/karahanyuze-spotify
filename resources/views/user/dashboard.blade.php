@@ -17,7 +17,73 @@
         <div class="mb-8">
             <h1 class="text-4xl font-bold text-white mb-2">My Dashboard</h1>
             <p class="text-zinc-400">Welcome back, {{ Auth::user()->FirstName ?? Auth::user()->UserName }}!</p>
-            <p class="text-sm text-zinc-500 mt-2">Your favorites</p>
+        </div>
+
+        <!-- Create Content Section -->
+        <div class="mb-8 bg-zinc-900 rounded-lg p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-white mb-2">Create Content</h2>
+                    <p class="text-zinc-400 text-sm">Share your music with the community. All content will be reviewed and approved by an administrator before being published.</p>
+                </div>
+                <a href="{{ route('submissions.index') }}" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors text-sm">
+                    View My Submissions →
+                </a>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <a href="{{ route('user.artists.create') }}" class="bg-zinc-800 hover:bg-zinc-700 rounded-lg p-4 transition-colors group">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center group-hover:bg-purple-500/30 transition-colors">
+                            <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-white font-semibold group-hover:text-purple-400 transition-colors">Create Artist</h3>
+                    </div>
+                    <p class="text-zinc-400 text-xs">Add a new artist</p>
+                </a>
+                
+                <a href="{{ route('user.orchestras.create') }}" class="bg-zinc-800 hover:bg-zinc-700 rounded-lg p-4 transition-colors group">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center group-hover:bg-blue-500/30 transition-colors">
+                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                            </svg>
+                        </div>
+                        <h3 class="text-white font-semibold group-hover:text-blue-400 transition-colors">Create Orchestra</h3>
+                    </div>
+                    <p class="text-zinc-400 text-xs">Add a new orchestra</p>
+                </a>
+                
+                <a href="{{ route('user.itoreros.create') }}" class="bg-zinc-800 hover:bg-zinc-700 rounded-lg p-4 transition-colors group">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center group-hover:bg-yellow-500/30 transition-colors">
+                            <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-white font-semibold group-hover:text-yellow-400 transition-colors">Create Itorero</h3>
+                    </div>
+                    <p class="text-zinc-400 text-xs">Add a new itorero</p>
+                </a>
+                
+                <a href="{{ route('user.songs.create') }}" class="bg-zinc-800 hover:bg-zinc-700 rounded-lg p-4 transition-colors group">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center group-hover:bg-green-500/30 transition-colors">
+                            <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                            </svg>
+                        </div>
+                        <h3 class="text-white font-semibold group-hover:text-green-400 transition-colors">Upload Song</h3>
+                    </div>
+                    <p class="text-zinc-400 text-xs">Upload a new song</p>
+                </a>
+            </div>
+        </div>
+
+        <!-- Favorites Section -->
+        <div class="mb-6">
+            <h2 class="text-2xl font-bold text-white mb-4">Your Favorites</h2>
         </div>
 
         <!-- Tabs for different favorite types -->

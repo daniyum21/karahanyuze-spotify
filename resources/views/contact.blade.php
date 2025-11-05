@@ -24,6 +24,110 @@
                 </div>
             </div>
 
+            <!-- Contact Form -->
+            <div class="bg-zinc-900 rounded-lg p-8 md:p-12 mb-8">
+                <h2 class="text-2xl font-bold text-white mb-6">Send Us a Message</h2>
+                
+                @if(session('success'))
+                <div class="bg-green-500/20 border border-green-500 text-green-400 px-4 py-3 rounded-lg mb-6">
+                    {{ session('success') }}
+                </div>
+                @endif
+
+                @if(session('error'))
+                <div class="bg-red-500/20 border border-red-500 text-red-400 px-4 py-3 rounded-lg mb-6">
+                    {{ session('error') }}
+                </div>
+                @endif
+
+                @if ($errors->any())
+                <div class="bg-red-500/20 border border-red-500 text-red-400 px-4 py-3 rounded-lg mb-6">
+                    <ul class="list-disc list-inside">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+                @endif
+
+                <form action="{{ route('contact.submit') }}" method="POST" class="space-y-6">
+                    @csrf
+
+                    <!-- Name -->
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-white mb-2">Name *</label>
+                        <input 
+                            type="text" 
+                            id="name" 
+                            name="name" 
+                            value="{{ old('name', $userName ?? '') }}"
+                            required
+                            {{ auth()->check() && $userName ? 'disabled' : '' }}
+                            class="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 {{ auth()->check() && $userName ? 'opacity-60 cursor-not-allowed' : '' }}"
+                            placeholder="Your name"
+                        >
+                        @if(auth()->check() && $userName)
+                            <input type="hidden" name="name" value="{{ $userName }}">
+                        @endif
+                    </div>
+
+                    <!-- Email -->
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-white mb-2">Email *</label>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            name="email" 
+                            value="{{ old('email', $userEmail ?? '') }}"
+                            required
+                            {{ auth()->check() && $userEmail ? 'disabled' : '' }}
+                            class="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 {{ auth()->check() && $userEmail ? 'opacity-60 cursor-not-allowed' : '' }}"
+                            placeholder="your.email@example.com"
+                        >
+                        @if(auth()->check() && $userEmail)
+                            <input type="hidden" name="email" value="{{ $userEmail }}">
+                        @endif
+                    </div>
+
+                    <!-- Subject -->
+                    <div>
+                        <label for="subject" class="block text-sm font-medium text-white mb-2">Subject *</label>
+                        <input 
+                            type="text" 
+                            id="subject" 
+                            name="subject" 
+                            value="{{ old('subject') }}"
+                            required
+                            class="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                            placeholder="What is this about?"
+                        >
+                    </div>
+
+                    <!-- Message -->
+                    <div>
+                        <label for="message" class="block text-sm font-medium text-white mb-2">Message *</label>
+                        <textarea 
+                            id="message" 
+                            name="message" 
+                            rows="6"
+                            required
+                            class="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                            placeholder="Your message here..."
+                        >{{ old('message') }}</textarea>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div>
+                        <button 
+                            type="submit" 
+                            class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+                        >
+                            Send Message
+                        </button>
+                    </div>
+                </form>
+            </div>
+
             <!-- Contact Details Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <!-- Email Card -->
@@ -36,8 +140,8 @@
                         </div>
                         <h3 class="text-xl font-semibold text-white">Email</h3>
                     </div>
-                    <a href="mailto:daniyum21@gmail.com" class="text-green-500 hover:text-green-400 transition-colors">
-                        daniyum21@gmail.com
+                    <a href="mailto:info@karahanyuze.com" class="text-green-500 hover:text-green-400 transition-colors">
+                        info@karahanyuze.com
                     </a>
                 </div>
 

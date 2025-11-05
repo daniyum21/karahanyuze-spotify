@@ -171,52 +171,99 @@
                 </div>
             </form>
 
-            <!-- Artist's Songs -->
-            @if($songs->count() > 0)
-            <div class="mt-12 bg-zinc-900 rounded-lg p-8">
-                <h2 class="text-2xl font-bold text-white mb-6">Songs by {{ $artist->StageName }}</h2>
-                <div class="space-y-4">
-                    @foreach($songs as $song)
-                    <div class="flex items-center justify-between p-4 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors">
-                        <div class="flex items-center gap-4">
-                            @if($song->ProfilePicture)
-                            <img 
-                                src="{{ \App\Helpers\ImageHelper::getImageUrl($song->ProfilePicture) }}" 
-                                alt="{{ $song->IndirimboName }}"
-                                class="w-12 h-12 rounded object-cover"
+            <!-- Current Artist Songs -->
+            @if($artist->songs->count() > 0)
+            <div class="mt-12">
+                <label class="block text-sm font-medium text-white mb-2">Songs by {{ $artist->StageName }}</label>
+                <div class="max-h-64 overflow-y-auto bg-zinc-800 border border-zinc-700 rounded-lg p-4 mb-4">
+                    <div class="space-y-2">
+                        @foreach($artist->songs as $artistSong)
+                        <div class="flex items-center justify-between gap-3 p-3 bg-zinc-700 rounded-lg">
+                            <div class="flex items-center gap-3 flex-1">
+                                <input 
+                                    type="checkbox" 
+                                    name="songs[]" 
+                                    value="{{ $artistSong->IndirimboID }}"
+                                    checked
+                                    class="w-5 h-5 text-green-500 bg-zinc-800 border-zinc-700 rounded focus:ring-green-500"
+                                >
+                                <div class="flex-1">
+                                    <div class="text-white font-medium">{{ $artistSong->IndirimboName }}</div>
+                                    @if($artistSong->artist)
+                                        <div class="text-sm text-zinc-400">{{ $artistSong->artist->StageName }}</div>
+                                    @endif
+                                </div>
+                            </div>
+                            <button 
+                                type="button" 
+                                onclick="removeSongFromArtist(this, '{{ $artistSong->IndirimboID }}')"
+                                class="text-red-400 hover:text-red-300 transition-colors text-sm font-medium px-3 py-1"
+                                title="Remove from artist"
                             >
-                            @else
-                            <div class="w-12 h-12 rounded bg-zinc-700 flex items-center justify-center">
-                                <svg class="w-6 h-6 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                                </svg>
-                            </div>
-                            @endif
-                            <div>
-                                <div class="text-white font-medium">{{ $song->IndirimboName }}</div>
-                                <div class="text-sm text-zinc-400">{{ $song->created_at->format('M d, Y') }}</div>
-                            </div>
+                                Remove
+                            </button>
                         </div>
-                        <a 
-                            href="{{ route('admin.songs.edit', $song->UUID) }}" 
-                            class="text-green-400 hover:text-green-300 transition-colors text-sm font-medium"
-                        >
-                            Edit Song
-                        </a>
+                        @endforeach
                     </div>
-                    @endforeach
                 </div>
-
-                <!-- Pagination -->
-                @if($songs->hasPages())
-                <div class="mt-6">
-                    {{ $songs->links() }}
-                </div>
-                @endif
+                <p class="text-xs text-zinc-500 mb-4">Uncheck a song or click "Remove" to remove it from this artist. This does not delete the song.</p>
             </div>
             @endif
+
+            <!-- Available Songs to Add -->
+            <div class="mt-6">
+                <label for="songs" class="block text-sm font-medium text-white mb-2">Add More Songs (Optional)</label>
+                <div class="max-h-96 overflow-y-auto bg-zinc-800 border border-zinc-700 rounded-lg p-4">
+                    @if($allSongs->count() > 0)
+                        <div class="space-y-2">
+                            @foreach($allSongs as $song)
+                                @if(!in_array($song->IndirimboID, $artistSongIds))
+                                <label class="flex items-center gap-3 p-3 hover:bg-zinc-700 rounded-lg cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        name="songs[]" 
+                                        value="{{ $song->IndirimboID }}"
+                                        {{ in_array($song->IndirimboID, old('songs', [])) ? 'checked' : '' }}
+                                        class="w-5 h-5 text-green-500 bg-zinc-800 border-zinc-700 rounded focus:ring-green-500"
+                                    >
+                                    <div class="flex-1">
+                                        <div class="text-white font-medium">{{ $song->IndirimboName }}</div>
+                                        @if($song->artist)
+                                            <div class="text-sm text-zinc-400">{{ $song->artist->StageName }}</div>
+                                        @endif
+                                    </div>
+                                </label>
+                                @endif
+                            @endforeach
+                        </div>
+                        @if($allSongs->whereNotIn('IndirimboID', $artistSongIds)->count() === 0)
+                            <p class="text-zinc-400 text-center py-4">All available songs are already assigned to this artist.</p>
+                        @endif
+                    @else
+                        <p class="text-zinc-400 text-center py-4">No songs available. Create some songs first.</p>
+                    @endif
+                </div>
+                <p class="text-xs text-zinc-500 mt-2">Check songs to add them to this artist</p>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+function removeSongFromArtist(button, songId) {
+    // Find the checkbox for this song
+    const checkbox = button.closest('div').querySelector('input[type="checkbox"][value="' + songId + '"]');
+    if (checkbox) {
+        // Uncheck the checkbox
+        checkbox.checked = false;
+        // Optionally hide or fade out the song row
+        const songRow = button.closest('div.flex.items-center.justify-between');
+        if (songRow) {
+            songRow.style.opacity = '0.5';
+            songRow.style.textDecoration = 'line-through';
+        }
+    }
+}
+</script>
 @endsection
 

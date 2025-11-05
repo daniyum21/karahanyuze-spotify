@@ -13,137 +13,153 @@
         <!-- Statistics Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <!-- Total Songs -->
-            <div class="bg-zinc-900 rounded-lg p-6 hover:bg-zinc-800 transition-colors">
+            <a href="{{ route('admin.songs.index') }}" class="bg-zinc-900 rounded-lg p-6 hover:bg-zinc-800 transition-colors cursor-pointer block">
                 <div class="flex items-center justify-between mb-4">
                     <div class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
                         <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                         </svg>
                     </div>
-                    <a href="{{ route('admin.songs.index') }}" class="text-blue-500 hover:text-blue-400 text-sm font-medium">
+                    <span class="text-blue-500 hover:text-blue-400 text-sm font-medium">
                         View All →
-                    </a>
+                    </span>
                 </div>
                 <h3 class="text-3xl font-bold text-white mb-1">{{ $totalSongs }}</h3>
                 <p class="text-zinc-400 text-sm">Total Songs</p>
-            </div>
+            </a>
 
             <!-- Approved Songs -->
-            <div class="bg-zinc-900 rounded-lg p-6 hover:bg-zinc-800 transition-colors">
+            <a href="{{ route('admin.songs.index', ['status' => 'approved']) }}" class="bg-zinc-900 rounded-lg p-6 hover:bg-zinc-800 transition-colors cursor-pointer block">
                 <div class="flex items-center justify-between mb-4">
                     <div class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
                         <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
+                    <span class="text-green-500 hover:text-green-400 text-sm font-medium">
+                        Manage →
+                    </span>
                 </div>
                 <h3 class="text-3xl font-bold text-white mb-1">{{ $approvedSongs }}</h3>
                 <p class="text-zinc-400 text-sm">Approved Songs</p>
-            </div>
+            </a>
 
             <!-- Pending Songs -->
-            <div class="bg-zinc-900 rounded-lg p-6 hover:bg-zinc-800 transition-colors">
+            <a href="{{ route('admin.songs.index', ['status' => 'pending']) }}" class="bg-zinc-900 rounded-lg p-6 hover:bg-zinc-800 transition-colors cursor-pointer block">
                 <div class="flex items-center justify-between mb-4">
                     <div class="w-12 h-12 bg-yellow-500/20 rounded-lg flex items-center justify-center">
                         <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
+                    @if($pendingSongs > 0)
+                    <span class="text-yellow-500 hover:text-yellow-400 text-sm font-medium">
+                        Review →
+                    </span>
+                    @endif
                 </div>
                 <h3 class="text-3xl font-bold text-white mb-1">{{ $pendingSongs }}</h3>
                 <p class="text-zinc-400 text-sm">Pending Songs</p>
-            </div>
+            </a>
 
             <!-- Featured Songs -->
-            <div class="bg-zinc-900 rounded-lg p-6 hover:bg-zinc-800 transition-colors">
+            <a href="{{ route('admin.songs.index', ['featured' => 'yes']) }}" class="bg-zinc-900 rounded-lg p-6 hover:bg-zinc-800 transition-colors cursor-pointer block">
                 <div class="flex items-center justify-between mb-4">
                     <div class="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
                         <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                         </svg>
                     </div>
+                    <span class="text-purple-500 hover:text-purple-400 text-sm font-medium">
+                        Manage →
+                    </span>
                 </div>
                 <h3 class="text-3xl font-bold text-white mb-1">{{ $featuredSongs }}</h3>
                 <p class="text-zinc-400 text-sm">Featured Songs</p>
-            </div>
+            </a>
         </div>
 
         <!-- Additional Stats -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <!-- Total Artists -->
-            <div class="bg-zinc-900 rounded-lg p-6">
-                <div class="flex items-center gap-4 mb-4">
+            <a href="{{ route('admin.artists.index') }}" class="bg-zinc-900 rounded-lg p-6 hover:bg-zinc-800 transition-colors cursor-pointer block">
+                <div class="flex items-center justify-between mb-4">
                     <div class="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
                         <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
                     </div>
-                    <div>
-                        <h3 class="text-2xl font-bold text-white">{{ $totalArtists }}</h3>
-                        <p class="text-zinc-400 text-sm">Artists</p>
-                    </div>
+                    <span class="text-green-500 hover:text-green-400 text-sm font-medium">
+                        Manage →
+                    </span>
                 </div>
-            </div>
+                <h3 class="text-3xl font-bold text-white mb-1">{{ $totalArtists }}</h3>
+                <p class="text-zinc-400 text-sm">Artists</p>
+            </a>
 
             <!-- Total Orchestras -->
-            <div class="bg-zinc-900 rounded-lg p-6">
-                <div class="flex items-center gap-4 mb-4">
+            <a href="{{ route('admin.orchestras.index') }}" class="bg-zinc-900 rounded-lg p-6 hover:bg-zinc-800 transition-colors cursor-pointer block">
+                <div class="flex items-center justify-between mb-4">
                     <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
                         <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                         </svg>
                     </div>
-                    <div>
-                        <h3 class="text-2xl font-bold text-white">{{ $totalOrchestras }}</h3>
-                        <p class="text-zinc-400 text-sm">Orchestras</p>
-                    </div>
+                    <span class="text-blue-500 hover:text-blue-400 text-sm font-medium">
+                        Manage →
+                    </span>
                 </div>
-            </div>
+                <h3 class="text-3xl font-bold text-white mb-1">{{ $totalOrchestras }}</h3>
+                <p class="text-zinc-400 text-sm">Orchestras</p>
+            </a>
 
             <!-- Total Itoreros -->
-            <div class="bg-zinc-900 rounded-lg p-6">
-                <div class="flex items-center gap-4 mb-4">
+            <a href="{{ route('admin.itoreros.index') }}" class="bg-zinc-900 rounded-lg p-6 hover:bg-zinc-800 transition-colors cursor-pointer block">
+                <div class="flex items-center justify-between mb-4">
                     <div class="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
                         <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
                     </div>
-                    <div>
-                        <h3 class="text-2xl font-bold text-white">{{ $totalItoreros }}</h3>
-                        <p class="text-zinc-400 text-sm">Itoreros</p>
-                    </div>
+                    <span class="text-purple-500 hover:text-purple-400 text-sm font-medium">
+                        Manage →
+                    </span>
                 </div>
-            </div>
+                <h3 class="text-3xl font-bold text-white mb-1">{{ $totalItoreros }}</h3>
+                <p class="text-zinc-400 text-sm">Itoreros</p>
+            </a>
 
             <!-- Total Playlists -->
-            <div class="bg-zinc-900 rounded-lg p-6">
-                <div class="flex items-center gap-4 mb-4">
+            <a href="{{ route('admin.playlists.index') }}" class="bg-zinc-900 rounded-lg p-6 hover:bg-zinc-800 transition-colors cursor-pointer block">
+                <div class="flex items-center justify-between mb-4">
                     <div class="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
                         <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                         </svg>
                     </div>
-                    <div>
-                        <h3 class="text-2xl font-bold text-white">{{ $totalPlaylists }}</h3>
-                        <p class="text-zinc-400 text-sm">Playlists</p>
-                    </div>
+                    <span class="text-yellow-500 hover:text-yellow-400 text-sm font-medium">
+                        Manage →
+                    </span>
                 </div>
-            </div>
+                <h3 class="text-3xl font-bold text-white mb-1">{{ $totalPlaylists }}</h3>
+                <p class="text-zinc-400 text-sm">Playlists</p>
+            </a>
 
             <!-- Total Users -->
-            <div class="bg-zinc-900 rounded-lg p-6">
-                <div class="flex items-center gap-4 mb-4">
+            <a href="{{ route('admin.users.index') }}" class="bg-zinc-900 rounded-lg p-6 hover:bg-zinc-800 transition-colors cursor-pointer block">
+                <div class="flex items-center justify-between mb-4">
                     <div class="w-10 h-10 bg-indigo-500/20 rounded-lg flex items-center justify-center">
                         <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
                     </div>
-                    <div>
-                        <h3 class="text-2xl font-bold text-white">{{ $totalUsers }}</h3>
-                        <p class="text-zinc-400 text-sm">Users</p>
-                    </div>
+                    <span class="text-indigo-500 hover:text-indigo-400 text-sm font-medium">
+                        Manage →
+                    </span>
                 </div>
-            </div>
+                <h3 class="text-3xl font-bold text-white mb-1">{{ $totalUsers }}</h3>
+                <p class="text-zinc-400 text-sm">Users</p>
+            </a>
         </div>
 
         <!-- Admin Navigation -->
@@ -257,8 +273,134 @@
                         </a>
                     </div>
                 </div>
+
+                <!-- Forum Management -->
+                <div class="bg-zinc-900 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        Forum
+                    </h3>
+                    <div class="space-y-2">
+                        <a href="{{ route('admin.forum.index') }}" class="block px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors text-sm font-medium">
+                            Manage Forum
+                        </a>
+                        @if($pendingThreads > 0)
+                        <a href="{{ route('admin.forum.index') }}" class="block px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg transition-colors text-sm font-medium">
+                            Pending Threads ({{ $pendingThreads }})
+                        </a>
+                        @endif
+                        @if($unresolvedFlags > 0)
+                        <a href="{{ route('admin.forum.flags.index') }}" class="block px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors text-sm font-medium">
+                            Flagged Content ({{ $unresolvedFlags }})
+                        </a>
+                        @endif
+                    </div>
+                </div>
             </div>
         </div>
+
+        <!-- Pending Songs Section -->
+        @if($pendingSongsList->count() > 0)
+        <div id="pending-songs" class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-bold text-white">Pending Songs for Approval</h2>
+                <span class="px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-sm font-semibold">{{ $pendingSongsList->count() }} pending</span>
+            </div>
+            <div class="bg-zinc-900 rounded-lg overflow-hidden">
+                <table class="w-full">
+                    <thead class="bg-zinc-800">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Song</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Submitted By</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Section</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Category</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Submitted</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-zinc-800">
+                        @foreach($pendingSongsList as $song)
+                        <tr class="hover:bg-zinc-800/50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center gap-3">
+                                    @if($song->ProfilePicture)
+                                    <img 
+                                        src="{{ \App\Helpers\ImageHelper::getImageUrl($song->ProfilePicture) }}" 
+                                        alt="{{ $song->IndirimboName }}"
+                                        class="w-10 h-10 rounded object-cover"
+                                    >
+                                    @else
+                                    <div class="w-10 h-10 rounded bg-zinc-700 flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                                        </svg>
+                                    </div>
+                                    @endif
+                                    <div>
+                                        <div class="text-white font-medium">{{ $song->IndirimboName }}</div>
+                                        @if($song->Description)
+                                        <div class="text-sm text-zinc-400">{{ \Illuminate\Support\Str::limit($song->Description, 50) }}</div>
+                                        @endif
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-white">
+                                    @if($song->user)
+                                        {{ $song->user->PublicName ?? $song->user->FirstName . ' ' . $song->user->LastName }}
+                                        <div class="text-sm text-zinc-400">{{ $song->user->Email ?? '' }}</div>
+                                    @else
+                                        <span class="text-zinc-500">Unknown</span>
+                                    @endif
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-white">
+                                    @if($song->artist)
+                                        <span class="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs font-semibold">Artist</span>
+                                        <div class="text-sm text-zinc-400 mt-1">{{ $song->artist->StageName }}</div>
+                                    @elseif($song->orchestra)
+                                        <span class="px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs font-semibold">Orchestra</span>
+                                        <div class="text-sm text-zinc-400 mt-1">{{ $song->orchestra->OrchestreName }}</div>
+                                    @elseif($song->itorero)
+                                        <span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs font-semibold">Itorero</span>
+                                        <div class="text-sm text-zinc-400 mt-1">{{ $song->itorero->ItoreroName }}</div>
+                                    @else
+                                        <span class="text-zinc-500 text-sm">No section</span>
+                                    @endif
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if($song->artist)
+                                <span class="text-zinc-300">Artist</span>
+                                @elseif($song->orchestra)
+                                <span class="text-zinc-300">Orchestra</span>
+                                @elseif($song->itorero)
+                                <span class="text-zinc-300">Itorero</span>
+                                @else
+                                <span class="text-zinc-500">Standalone</span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-zinc-300 text-sm">
+                                {{ $song->created_at ? $song->created_at->format('M d, Y') : 'N/A' }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <a 
+                                    href="{{ route('admin.songs.edit', $song->UUID) }}" 
+                                    class="text-green-400 hover:text-green-300 transition-colors mr-3"
+                                >
+                                    Review
+                                </a>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @endif
 
         <!-- Recent Songs -->
         @if($recentSongs->count() > 0)
@@ -299,7 +441,7 @@
                                     @endif
                                     <div>
                                         <div class="text-white font-medium">{{ $song->IndirimboName }}</div>
-                                        <div class="text-sm text-zinc-400">{{ $song->created_at->format('M d, Y') }}</div>
+                                        <div class="text-sm text-zinc-400">{{ $song->created_at ? $song->created_at->format('M d, Y') : 'N/A' }}</div>
                                     </div>
                                 </div>
                             </td>

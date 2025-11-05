@@ -13,13 +13,34 @@ class AdminArtistController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $artists = Artist::withCount('songs')
-            ->latest()
-            ->paginate(20);
+        $sortBy = $request->get('sort', 'created_at');
+        $sortDirection = $request->get('direction', 'desc');
+        
+        // Validate sort direction
+        if (!in_array($sortDirection, ['asc', 'desc'])) {
+            $sortDirection = 'desc';
+        }
+        
+        // Validate sort column
+        $allowedSorts = ['StageName', 'FirstName', 'LastName', 'Email', 'created_at', 'songs_count', 'IsFeatured'];
+        if (!in_array($sortBy, $allowedSorts)) {
+            $sortBy = 'created_at';
+        }
+        
+        $query = Artist::withCount('songs');
+        
+        // Apply sorting
+        if ($sortBy === 'songs_count') {
+            $query->orderBy('songs_count', $sortDirection);
+        } else {
+            $query->orderBy($sortBy, $sortDirection);
+        }
+        
+        $artists = $query->paginate(20)->withQueryString();
 
-        return view('admin.artists.index', compact('artists'));
+        return view('admin.artists.index', compact('artists', 'sortBy', 'sortDirection'));
     }
 
     /**
@@ -69,8 +90,9 @@ class AdminArtistController extends Controller
 
         $artist->save();
 
-        return redirect()->route('admin.artists.index')
-            ->with('success', 'Artist has been created successfully.');
+        // Redirect to nested song creation route: /admin/abahanzi/{uuid}/songs
+        return redirect()->route('admin.artists.songs.create', ['uuid' => $artist->UUID])
+            ->with('success', 'Artist created successfully! Now add a song for this artist.');
     }
 
     /**
@@ -90,10 +112,17 @@ class AdminArtistController extends Controller
      */
     public function edit($uuid)
     {
-        $artist = Artist::where('UUID', $uuid)->firstOrFail();
-        $songs = Song::where('UmuhanziID', $artist->UmuhanziID)->paginate(20);
+        $artist = Artist::where('UUID', $uuid)
+            ->with('songs')
+            ->firstOrFail();
+        
+        $allSongs = Song::where('StatusID', 2)
+            ->with('artist')
+            ->latest()
+            ->get();
+        $artistSongIds = $artist->songs->pluck('IndirimboID')->toArray();
 
-        return view('admin.artists.edit', compact('artist', 'songs'));
+        return view('admin.artists.edit', compact('artist', 'allSongs', 'artistSongIds'));
     }
 
     /**
@@ -112,6 +141,8 @@ class AdminArtistController extends Controller
             'Description' => 'nullable|string',
             'IsFeatured' => 'nullable|boolean',
             'image' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',
+            'songs' => 'nullable|array',
+            'songs.*' => 'exists:Indirimbo,IndirimboID',
         ]);
 
         $artist->FirstName = $validated['FirstName'] ?? '';
@@ -141,6 +172,28 @@ class AdminArtistController extends Controller
         }
 
         $artist->save();
+
+        // Handle song assignments
+        if ($request->has('songs')) {
+            $selectedSongIds = $validated['songs'];
+            
+            // Remove songs that are no longer selected (clear their artist association)
+            Song::where('UmuhanziID', $artist->UmuhanziID)
+                ->whereNotIn('IndirimboID', $selectedSongIds)
+                ->update(['UmuhanziID' => null]);
+            
+            // Add songs that are newly selected (clear other entity associations first)
+            Song::whereIn('IndirimboID', $selectedSongIds)
+                ->update([
+                    'UmuhanziID' => $artist->UmuhanziID,
+                    'OrchestreID' => null, // Clear orchestra association
+                    'ItoreroID' => null    // Clear itorero association
+                ]);
+        } else {
+            // If no songs selected, remove all song associations
+            Song::where('UmuhanziID', $artist->UmuhanziID)
+                ->update(['UmuhanziID' => null]);
+        }
 
         return redirect()->route('admin.artists.index')
             ->with('success', 'Artist has been updated successfully.');

@@ -19,9 +19,18 @@ use App\Http\Controllers\Admin\AdminOrchestraController;
 use App\Http\Controllers\Admin\AdminItoreroController;
 use App\Http\Controllers\Admin\AdminPlaylistController;
 use App\Http\Controllers\Admin\AdminUserController;
+use App\Http\Controllers\Admin\AdminForumController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\UserDashboardController;
+use App\Http\Controllers\UserArtistController;
+use App\Http\Controllers\UserOrchestraController;
+use App\Http\Controllers\UserItoreroController;
+use App\Http\Controllers\UserSongController;
+use App\Http\Controllers\UserSubmissionController;
+use App\Http\Controllers\ForumThreadController;
+use App\Http\Controllers\ForumCommentController;
+use App\Http\Controllers\ForumFlagController;
 use App\Models\Song;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
@@ -29,6 +38,35 @@ use Illuminate\Support\Facades\Auth;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/contact', [HomeController::class, 'contactUs'])->name('contact');
+Route::post('/contact', [HomeController::class, 'submitContact'])->name('contact.submit');
+
+// Forum Routes (Public)
+Route::get('/forum', [ForumThreadController::class, 'index'])->name('forum.index');
+
+// Forum Routes (Authenticated Users)
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/forum/create', [ForumThreadController::class, 'create'])->name('forum.create');
+    Route::post('/forum', [ForumThreadController::class, 'store'])->name('forum.store');
+});
+
+// Forum Thread Show (Public, but must be approved)
+Route::get('/forum/{slug}', [ForumThreadController::class, 'show'])->name('forum.show');
+
+// Forum Routes (Authenticated Users - Edit/Delete)
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/forum/{slug}/edit', [ForumThreadController::class, 'edit'])->name('forum.edit');
+    Route::put('/forum/{slug}', [ForumThreadController::class, 'update'])->name('forum.update');
+    Route::delete('/forum/{slug}', [ForumThreadController::class, 'destroy'])->name('forum.destroy');
+    
+    // Comments
+    Route::post('/forum/{slug}/comments', [ForumCommentController::class, 'store'])->name('forum.comments.store');
+    Route::get('/forum/comments/{commentId}/edit', [ForumCommentController::class, 'edit'])->name('forum.comments.edit');
+    Route::put('/forum/comments/{commentId}', [ForumCommentController::class, 'update'])->name('forum.comments.update');
+    Route::delete('/forum/comments/{commentId}', [ForumCommentController::class, 'destroy'])->name('forum.comments.destroy');
+    
+    // Flags
+    Route::post('/forum/flags', [ForumFlagController::class, 'store'])->name('forum.flags.store');
+});
 
 // Test email route (for debugging - remove or protect in production)
 Route::get('/test-email', function () {
@@ -371,6 +409,38 @@ Route::middleware(['auth'])->group(function () {
     })->name('favorites.toggle');
     // New polymorphic route for all favorite types
     Route::post('/favorites/{type}/{id}/toggle', [UserDashboardController::class, 'toggleFavorite'])->name('favorites.toggle.polymorphic');
+    
+    // User Content Creation Routes (all authenticated users)
+    Route::prefix('user')->name('user.')->group(function () {
+        // Artists
+        Route::get('artists/create', [UserArtistController::class, 'create'])->name('artists.create');
+        Route::post('artists', [UserArtistController::class, 'store'])->name('artists.store');
+        
+        // Orchestras
+        Route::get('orchestras/create', [UserOrchestraController::class, 'create'])->name('orchestras.create');
+        Route::post('orchestras', [UserOrchestraController::class, 'store'])->name('orchestras.store');
+        
+        // Itoreros
+        Route::get('itoreros/create', [UserItoreroController::class, 'create'])->name('itoreros.create');
+        Route::post('itoreros', [UserItoreroController::class, 'store'])->name('itoreros.store');
+        
+        // Songs (legacy standalone routes)
+        Route::get('songs/create', [UserSongController::class, 'create'])->name('songs.create');
+        Route::post('songs', [UserSongController::class, 'store'])->name('songs.store');
+    });
+    
+    // Nested song creation routes (RESTful structure)
+    // Artists/{uuid}/songs
+    Route::get('artists/{uuid}/songs', [UserSongController::class, 'createForArtist'])->name('artists.songs.create');
+    Route::post('artists/{uuid}/songs', [UserSongController::class, 'storeForArtist'])->name('artists.songs.store');
+    
+    // Orchestre/{uuid}/songs
+    Route::get('orchestre/{uuid}/songs', [UserSongController::class, 'createForOrchestra'])->name('orchestre.songs.create');
+    Route::post('orchestre/{uuid}/songs', [UserSongController::class, 'storeForOrchestra'])->name('orchestre.songs.store');
+    
+    // Amatorero/{uuid}/songs
+    Route::get('amatorero/{uuid}/songs', [UserSongController::class, 'createForItorero'])->name('amatorero.songs.create');
+    Route::post('amatorero/{uuid}/songs', [UserSongController::class, 'storeForItorero'])->name('amatorero.songs.store');
 });
 
 Route::get('/artists', [ArtistController::class, 'index'])->name('artists.index');
@@ -578,9 +648,24 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('songs', [AdminSongController::class, 'index'])->name('songs.index');
     Route::get('songs/create', [AdminSongController::class, 'create'])->name('songs.create');
     Route::post('songs', [AdminSongController::class, 'store'])->name('songs.store');
+    
+    // Nested song creation routes (RESTful structure)
+    // Artists/{uuid}/songs
+    Route::get('abahanzi/{uuid}/songs', [AdminSongController::class, 'createForArtist'])->name('artists.songs.create');
+    Route::post('abahanzi/{uuid}/songs', [AdminSongController::class, 'storeForArtist'])->name('artists.songs.store');
+    
+    // Orchestre/{uuid}/songs
+    Route::get('orchestre/{uuid}/songs', [AdminSongController::class, 'createForOrchestra'])->name('orchestras.songs.create');
+    Route::post('orchestre/{uuid}/songs', [AdminSongController::class, 'storeForOrchestra'])->name('orchestras.songs.store');
+    
+    // Amatorero/{uuid}/songs
+    Route::get('amatorero/{uuid}/songs', [AdminSongController::class, 'createForItorero'])->name('itoreros.songs.create');
+    Route::post('amatorero/{uuid}/songs', [AdminSongController::class, 'storeForItorero'])->name('itoreros.songs.store');
     Route::get('songs/{uuid}', [AdminSongController::class, 'show'])->name('songs.show');
     Route::get('songs/{uuid}/edit', [AdminSongController::class, 'edit'])->name('songs.edit');
     Route::put('songs/{uuid}', [AdminSongController::class, 'update'])->name('songs.update');
+    Route::patch('songs/{uuid}/toggle-featured', [AdminSongController::class, 'toggleFeatured'])->name('songs.toggle-featured');
+    Route::post('songs/{uuid}/decline', [AdminSongController::class, 'decline'])->name('songs.decline');
     Route::delete('songs/{uuid}', [AdminSongController::class, 'destroy'])->name('songs.destroy');
     
     // Artists Management (using 'abahanzi' for old app compatibility)
@@ -627,4 +712,17 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('users/{id}/edit', [AdminUserController::class, 'edit'])->name('users.edit');
     Route::put('users/{id}', [AdminUserController::class, 'update'])->name('users.update');
     Route::delete('users/{id}', [AdminUserController::class, 'destroy'])->name('users.destroy');
+    
+    // Forum Management
+    Route::get('forum', [AdminForumController::class, 'index'])->name('forum.index');
+    Route::delete('forum/threads/{threadId}', [AdminForumController::class, 'destroyThread'])->name('forum.threads.destroy');
+    Route::delete('forum/comments/{commentId}', [AdminForumController::class, 'destroyComment'])->name('forum.comments.destroy');
+    Route::post('forum/threads/{threadId}/toggle-lock', [AdminForumController::class, 'toggleLock'])->name('forum.threads.toggle-lock');
+    Route::post('forum/threads/{threadId}/toggle-pin', [AdminForumController::class, 'togglePin'])->name('forum.threads.toggle-pin');
+    Route::post('forum/threads/{threadId}/approve', [AdminForumController::class, 'approveThread'])->name('forum.threads.approve');
+    Route::post('forum/threads/{threadId}/reject', [AdminForumController::class, 'rejectThread'])->name('forum.threads.reject');
+    Route::post('forum/comments/{commentId}/approve', [AdminForumController::class, 'approveComment'])->name('forum.comments.approve');
+    Route::post('forum/comments/{commentId}/reject', [AdminForumController::class, 'rejectComment'])->name('forum.comments.reject');
+    Route::get('forum/flags', [AdminForumController::class, 'flags'])->name('forum.flags.index');
+    Route::post('forum/flags/{flagId}/resolve', [AdminForumController::class, 'resolveFlag'])->name('forum.flags.resolve');
 });

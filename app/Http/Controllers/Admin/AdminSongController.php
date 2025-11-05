@@ -10,6 +10,8 @@ use App\Models\Itorero;
 use App\Models\SongStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class AdminSongController extends Controller
@@ -17,26 +19,85 @@ class AdminSongController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $songs = Song::with(['artist', 'orchestra', 'itorero', 'status'])
-            ->latest()
-            ->paginate(20);
+        $query = Song::with(['artist', 'orchestra', 'itorero', 'status']);
 
-        return view('admin.songs.index', compact('songs'));
+        // Load user relationship for pending songs
+        if ($request->has('status') && $request->status === 'pending') {
+            $query->with('user');
+        }
+
+        // Filter by status
+        if ($request->has('status')) {
+            if ($request->status === 'pending') {
+                $pendingStatus = SongStatus::where('StatusName', 'Pending')
+                    ->orWhere('StatusName', 'pending')
+                    ->orWhere('StatusName', 'Pending Approval')
+                    ->first();
+                
+                if ($pendingStatus) {
+                    $query->where('StatusID', $pendingStatus->StatusID);
+                } else {
+                    $query->where('StatusID', 1); // Fallback to ID 1
+                }
+            } elseif ($request->status === 'approved') {
+                $approvedStatus = SongStatus::where('StatusName', 'Approved')
+                    ->orWhere('StatusName', 'approved')
+                    ->orWhere('StatusName', 'Public')
+                    ->orWhere('StatusName', 'public')
+                    ->first();
+                
+                if ($approvedStatus) {
+                    $query->where('StatusID', $approvedStatus->StatusID);
+                } else {
+                    $query->where('StatusID', 2); // Fallback to ID 2
+                }
+            }
+        }
+
+        // Filter by featured
+        if ($request->has('featured')) {
+            if ($request->featured === 'yes') {
+                $query->where('IsFeatured', 1);
+            } elseif ($request->featured === 'no') {
+                $query->where('IsFeatured', 0);
+            }
+        }
+
+        $songs = $query->latest()->paginate(20)->withQueryString();
+
+        $filterStatus = $request->get('status', 'all');
+        $filterFeatured = $request->get('featured', 'all');
+
+        return view('admin.songs.index', compact('songs', 'filterStatus', 'filterFeatured'));
     }
 
     /**
      * Show the form for creating a new resource.
+     * Accepts optional query parameters: artist, orchestra, or itorero UUID to pre-select.
      */
-    public function create()
+    public function create(Request $request)
     {
         $artists = Artist::orderBy('StageName', 'asc')->get();
         $orchestras = Orchestra::orderBy('OrchestreName', 'asc')->get();
         $itoreros = Itorero::orderBy('ItoreroName', 'asc')->get();
         $statuses = SongStatus::orderBy('StatusName', 'asc')->get();
+        
+        // Pre-select entity if provided
+        $selectedArtist = null;
+        $selectedOrchestra = null;
+        $selectedItorero = null;
+        
+        if ($request->has('artist')) {
+            $selectedArtist = Artist::where('UUID', $request->artist)->first();
+        } elseif ($request->has('orchestra')) {
+            $selectedOrchestra = Orchestra::where('UUID', $request->orchestra)->first();
+        } elseif ($request->has('itorero')) {
+            $selectedItorero = Itorero::where('UUID', $request->itorero)->first();
+        }
 
-        return view('admin.songs.create', compact('artists', 'orchestras', 'itoreros', 'statuses'));
+        return view('admin.songs.create', compact('artists', 'orchestras', 'itoreros', 'statuses', 'selectedArtist', 'selectedOrchestra', 'selectedItorero'));
     }
 
     /**
@@ -98,8 +159,28 @@ class AdminSongController extends Controller
 
         $song->save();
 
-        return redirect()->route('admin.songs.index')
-            ->with('success', 'Song has been created successfully.');
+        // If an entity was pre-selected, redirect back to song creation with that entity preserved
+        // This allows admins to quickly add multiple songs for the same artist/orchestra/itorero
+        $redirectRoute = route('admin.songs.index');
+        if (!empty($validated['UmuhanziID'])) {
+            $artist = Artist::find($validated['UmuhanziID']);
+            if ($artist) {
+                $redirectRoute = route('admin.songs.create', ['artist' => $artist->UUID]);
+            }
+        } elseif (!empty($validated['OrchestreID'])) {
+            $orchestra = Orchestra::find($validated['OrchestreID']);
+            if ($orchestra) {
+                $redirectRoute = route('admin.songs.create', ['orchestra' => $orchestra->UUID]);
+            }
+        } elseif (!empty($validated['ItoreroID'])) {
+            $itorero = Itorero::find($validated['ItoreroID']);
+            if ($itorero) {
+                $redirectRoute = route('admin.songs.create', ['itorero' => $itorero->UUID]);
+            }
+        }
+
+        return redirect($redirectRoute)
+            ->with('success', 'Song has been created successfully.' . ($redirectRoute !== route('admin.songs.index') ? ' You can add another song for this ' . (!empty($validated['UmuhanziID']) ? 'artist' : (!empty($validated['OrchestreID']) ? 'orchestra' : 'itorero')) . ' or go back to the songs list.' : ''));
     }
 
     /**
@@ -130,6 +211,19 @@ class AdminSongController extends Controller
     }
 
     /**
+     * Toggle featured status of a song
+     */
+    public function toggleFeatured($uuid)
+    {
+        $song = Song::where('UUID', $uuid)->firstOrFail();
+        $song->IsFeatured = !$song->IsFeatured;
+        $song->save();
+
+        $status = $song->IsFeatured ? 'featured' : 'unfeatured';
+        return back()->with('success', "Song {$status} successfully!");
+    }
+
+    /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, $uuid)
@@ -149,25 +243,84 @@ class AdminSongController extends Controller
             'image' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',
         ]);
 
+        // Handle owner associations FIRST (before setting other model attributes)
+        // This prevents null values from being included in the final save()
+        $umuhanziID = !empty($validated['UmuhanziID']) ? (int)$validated['UmuhanziID'] : null;
+        $orchestreID = !empty($validated['OrchestreID']) ? (int)$validated['OrchestreID'] : null;
+        $itoreroID = !empty($validated['ItoreroID']) ? (int)$validated['ItoreroID'] : null;
+
+        // Only update owner associations if at least one is explicitly provided
+        if ($umuhanziID !== null || $orchestreID !== null || $itoreroID !== null) {
+            // Store original values for comparison
+            $originalUmuhanziID = $song->UmuhanziID;
+            $originalOrchestreID = $song->OrchestreID;
+            $originalItoreroID = $song->ItoreroID;
+            
+            // Prepare updates - separate null and non-null
+            $nonNullUpdates = [];
+            $nullUpdates = [];
+            
+            // Clear all first, then set the new one to ensure a song only belongs to one entity
+            if ($umuhanziID !== null) {
+                // Assigning to artist - clear orchestra and itorero
+                $nonNullUpdates['UmuhanziID'] = $umuhanziID;
+                // Only clear if they were set before
+                if ($originalOrchestreID !== null) {
+                    $nullUpdates['OrchestreID'] = null;
+                }
+                if ($originalItoreroID !== null) {
+                    $nullUpdates['ItoreroID'] = null;
+                }
+            } elseif ($orchestreID !== null) {
+                // Assigning to orchestra - clear artist and itorero
+                if ($originalUmuhanziID !== null) {
+                    $nullUpdates['UmuhanziID'] = null;
+                }
+                $nonNullUpdates['OrchestreID'] = $orchestreID;
+                if ($originalItoreroID !== null) {
+                    $nullUpdates['ItoreroID'] = null;
+                }
+            } elseif ($itoreroID !== null) {
+                // Assigning to itorero - clear artist and orchestra
+                if ($originalUmuhanziID !== null) {
+                    $nullUpdates['UmuhanziID'] = null;
+                }
+                if ($originalOrchestreID !== null) {
+                    $nullUpdates['OrchestreID'] = null;
+                }
+                $nonNullUpdates['ItoreroID'] = $itoreroID;
+            }
+            
+            // Update non-null owner fields first
+            if (!empty($nonNullUpdates)) {
+                DB::table('Indirimbo')
+                    ->where('IndirimboID', $song->IndirimboID)
+                    ->update($nonNullUpdates);
+            }
+            
+            // For null fields, try to update them individually with error handling
+            // Skip if database doesn't allow null
+            foreach ($nullUpdates as $field => $value) {
+                try {
+                    DB::table('Indirimbo')
+                        ->where('IndirimboID', $song->IndirimboID)
+                        ->update([$field => null]);
+                } catch (\Illuminate\Database\QueryException $e) {
+                    // If setting to null fails, just skip it - field stays as is
+                    continue;
+                }
+            }
+            
+            // Refresh model to get updated values
+            $song->refresh();
+        }
+        
+        // Now set other model attributes (these will be saved later)
         $song->IndirimboName = $validated['IndirimboName'];
         $song->Description = $validated['Description'] ?? '';
         $song->Lyrics = $validated['Lyrics'] ?? '';
         $song->StatusID = $validated['StatusID'];
         $song->IsFeatured = $validated['IsFeatured'] ?? false;
-
-        // Clear previous owner associations
-        $song->UmuhanziID = null;
-        $song->OrchestreID = null;
-        $song->ItoreroID = null;
-
-        // Set owner (artist, orchestra, or itorero)
-        if (!empty($validated['UmuhanziID'])) {
-            $song->UmuhanziID = $validated['UmuhanziID'];
-        } elseif (!empty($validated['OrchestreID'])) {
-            $song->OrchestreID = $validated['OrchestreID'];
-        } elseif (!empty($validated['ItoreroID'])) {
-            $song->ItoreroID = $validated['ItoreroID'];
-        }
 
         // Handle audio file upload
         if ($request->hasFile('audio')) {
@@ -207,8 +360,51 @@ class AdminSongController extends Controller
 
         $song->save();
 
-        return redirect()->route('admin.songs.index')
+        // Check if request came from a filtered view (pending, approved, or featured)
+        // Preserve the filter when redirecting back
+        $redirectParams = [];
+        if ($request->has('status')) {
+            $redirectParams['status'] = $request->get('status');
+        } elseif ($request->has('featured')) {
+            $redirectParams['featured'] = $request->get('featured');
+        }
+        
+        // If no filter in request, check if the song was pending before update
+        // If it was pending and is now approved, redirect to pending list to see if there are more
+        if (empty($redirectParams)) {
+            $originalStatus = $song->getOriginal('StatusID');
+            $pendingStatus = SongStatus::where('StatusName', 'Pending')
+                ->orWhere('StatusName', 'pending')
+                ->orWhere('StatusName', 'Pending Approval')
+                ->first();
+            
+            if ($pendingStatus && $originalStatus == $pendingStatus->StatusID) {
+                // Song was pending, redirect to pending list
+                $redirectParams['status'] = 'pending';
+            }
+        }
+        
+        return redirect()->route('admin.songs.index', $redirectParams)
             ->with('success', 'Song has been updated successfully.');
+    }
+
+    /**
+     * Decline a song with a reason (does not delete it)
+     */
+    public function decline(Request $request, $uuid)
+    {
+        $validated = $request->validate([
+            'declined_reason' => 'required|string|max:1000',
+        ]);
+
+        $song = Song::where('UUID', $uuid)->firstOrFail();
+        
+        $song->declined_reason = $validated['declined_reason'];
+        $song->declined_at = now();
+        $song->declined_by = Auth::id();
+        $song->save();
+
+        return back()->with('success', 'Song declined successfully. The user will be notified of the reason.');
     }
 
     /**
@@ -238,6 +434,199 @@ class AdminSongController extends Controller
 
         return redirect()->route('admin.songs.index')
             ->with('success', 'Song has been deleted successfully.');
+    }
+
+    /**
+     * Show the form for creating a song for a specific artist.
+     * Route: /admin/abahanzi/{uuid}/songs
+     */
+    public function createForArtist($uuid)
+    {
+        $artist = Artist::where('UUID', $uuid)->firstOrFail();
+        $statuses = SongStatus::orderBy('StatusName', 'asc')->get();
+        
+        return view('admin.songs.create-for-entity', [
+            'entity' => $artist,
+            'entityType' => 'artist',
+            'entityName' => $artist->StageName,
+            'entityId' => $artist->UmuhanziID,
+            'entityIdField' => 'UmuhanziID',
+            'statuses' => $statuses
+        ]);
+    }
+
+    /**
+     * Store a song for a specific artist.
+     * Route: POST /admin/abahanzi/{uuid}/songs
+     */
+    public function storeForArtist(Request $request, $uuid)
+    {
+        $artist = Artist::where('UUID', $uuid)->firstOrFail();
+        return $this->storeSongForEntity($request, $artist, 'artist', $artist->UmuhanziID, 'UmuhanziID', $uuid, true);
+    }
+
+    /**
+     * Show the form for creating a song for a specific orchestra.
+     * Route: /admin/orchestre/{uuid}/songs
+     */
+    public function createForOrchestra($uuid)
+    {
+        $orchestra = Orchestra::where('UUID', $uuid)->firstOrFail();
+        $statuses = SongStatus::orderBy('StatusName', 'asc')->get();
+        
+        return view('admin.songs.create-for-entity', [
+            'entity' => $orchestra,
+            'entityType' => 'orchestra',
+            'entityName' => $orchestra->OrchestreName,
+            'entityId' => $orchestra->OrchestreID,
+            'entityIdField' => 'OrchestreID',
+            'statuses' => $statuses
+        ]);
+    }
+
+    /**
+     * Store a song for a specific orchestra.
+     * Route: POST /admin/orchestre/{uuid}/songs
+     */
+    public function storeForOrchestra(Request $request, $uuid)
+    {
+        $orchestra = Orchestra::where('UUID', $uuid)->firstOrFail();
+        return $this->storeSongForEntity($request, $orchestra, 'orchestra', $orchestra->OrchestreID, 'OrchestreID', $uuid, true);
+    }
+
+    /**
+     * Show the form for creating a song for a specific itorero.
+     * Route: /admin/amatorero/{uuid}/songs
+     */
+    public function createForItorero($uuid)
+    {
+        $itorero = Itorero::where('UUID', $uuid)->firstOrFail();
+        $statuses = SongStatus::orderBy('StatusName', 'asc')->get();
+        
+        return view('admin.songs.create-for-entity', [
+            'entity' => $itorero,
+            'entityType' => 'itorero',
+            'entityName' => $itorero->ItoreroName,
+            'entityId' => $itorero->ItoreroID,
+            'entityIdField' => 'ItoreroID',
+            'statuses' => $statuses
+        ]);
+    }
+
+    /**
+     * Store a song for a specific itorero.
+     * Route: POST /admin/amatorero/{uuid}/songs
+     */
+    public function storeForItorero(Request $request, $uuid)
+    {
+        $itorero = Itorero::where('UUID', $uuid)->firstOrFail();
+        return $this->storeSongForEntity($request, $itorero, 'itorero', $itorero->ItoreroID, 'ItoreroID', $uuid, true);
+    }
+
+    /**
+     * Helper method to store a song for a specific entity (artist, orchestra, or itorero).
+     */
+    private function storeSongForEntity(Request $request, $entity, $entityType, $entityId, $entityIdField, $entityUuid, $isAdmin = false)
+    {
+        $validated = $request->validate([
+            'IndirimboName' => 'nullable|string|max:255',
+            'Description' => 'nullable|string',
+            'Lyrics' => 'nullable|string',
+            'audio' => 'required|array',
+            'audio.*' => 'required|file|mimes:mp3|max:51200',
+            'image' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',
+        ]);
+
+        // Get pending status for all uploaded songs
+        $pendingStatus = SongStatus::where('StatusName', 'Pending')
+            ->orWhere('StatusName', 'pending')
+            ->orWhere('StatusName', 'Pending Approval')
+            ->first();
+        
+        if (!$pendingStatus) {
+            $pendingStatus = SongStatus::find(1);
+        }
+        
+        if (!$pendingStatus) {
+            $pendingStatus = SongStatus::first();
+        }
+        
+        if (!$pendingStatus) {
+            return back()->withErrors(['status' => 'Unable to set song status. Please contact administrator.'])->withInput();
+        }
+
+        $uploadedSongs = [];
+        $errors = [];
+
+        // Handle multiple audio file uploads
+        if ($request->hasFile('audio')) {
+            $audioFiles = $request->file('audio');
+            
+            foreach ($audioFiles as $index => $audioFile) {
+                try {
+                    $song = new Song();
+                    
+                    // Extract song name from filename (remove extension and replace underscores/hyphens with spaces)
+                    $songName = $validated['IndirimboName'] ?? null;
+                    if (!$songName || count($audioFiles) > 1) {
+                        // Use filename without extension as song name for bulk uploads
+                        $originalName = pathinfo($audioFile->getClientOriginalName(), PATHINFO_FILENAME);
+                        $songName = str_replace(['_', '-'], ' ', $originalName);
+                        $songName = ucwords(strtolower($songName));
+                    }
+                    
+                    $song->IndirimboName = $songName;
+                    $song->Description = $validated['Description'] ?? '';
+                    $song->Lyrics = $validated['Lyrics'] ?? '';
+                    $song->StatusID = $pendingStatus->StatusID; // Always set to pending for bulk uploads
+                    $song->IsFeatured = false;
+                    $song->UUID = (string) Str::uuid();
+                    $song->$entityIdField = $entityId; // Set the entity ID
+                    $song->UserID = auth()->id();
+
+                    // Handle audio file upload
+                    $extension = $audioFile->getClientOriginalExtension();
+                    $fileName = Str::random(100) . '_' . time() . '_' . $index . '.' . $extension;
+                    $path = $audioFile->storeAs('Audios', $fileName, 'local');
+                    $song->IndirimboUrl = 'Audios/' . $fileName;
+
+                    // Handle image file upload (only for first file if provided)
+                    if ($index === 0 && $request->hasFile('image')) {
+                        $imageFile = $request->file('image');
+                        $extension = $imageFile->getClientOriginalExtension();
+                        $imageFileName = Str::random(100) . '_' . time() . '.' . $extension;
+                        $imagePath = $imageFile->storeAs('Pictures', $imageFileName, 'local');
+                        $song->ProfilePicture = 'Pictures/' . $imageFileName;
+                    }
+
+                    $song->save();
+                    $uploadedSongs[] = $song->IndirimboName;
+                } catch (\Exception $e) {
+                    $errors[] = 'Failed to upload ' . $audioFile->getClientOriginalName() . ': ' . $e->getMessage();
+                }
+            }
+        }
+
+        // Redirect back to the same entity's song creation page
+        // Map entity types to route names
+        $routeMap = [
+            'artist' => 'artists.songs.create',
+            'orchestra' => 'orchestras.songs.create',
+            'itorero' => 'itoreros.songs.create',
+        ];
+        $routePrefix = $isAdmin ? 'admin.' : '';
+        $routeName = $routePrefix . ($routeMap[$entityType] ?? $entityType . 's.songs.create');
+
+        $message = count($uploadedSongs) > 0 
+            ? count($uploadedSongs) . ' song(s) uploaded successfully and set to pending status!' 
+            : 'No songs were uploaded.';
+
+        if (count($errors) > 0) {
+            $message .= ' Errors: ' . implode(', ', $errors);
+        }
+        
+        return redirect()->route($routeName, ['uuid' => $entityUuid])
+            ->with(count($errors) > 0 ? 'error' : 'success', $message);
     }
 }
 

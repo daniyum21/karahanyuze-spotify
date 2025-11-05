@@ -29,6 +29,9 @@ class Song extends Model
         'Lyrics',
         'UserID',
         'approved_at',
+        'declined_reason',
+        'declined_at',
+        'declined_by',
         'UUID',
         'PlayCount',
         'DownloadCount',
@@ -39,6 +42,7 @@ class Song extends Model
         'IsFeatured' => 'boolean',
         'deleted' => 'boolean',
         'approved_at' => 'datetime',
+        'declined_at' => 'datetime',
     ];
 
     public function status(): BelongsTo
@@ -59,6 +63,32 @@ class Song extends Model
     public function itorero(): BelongsTo
     {
         return $this->belongsTo(Itorero::class, 'ItoreroID', 'ItoreroID');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'UserID', 'UserID');
+    }
+
+    public function declinedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'declined_by', 'UserID');
+    }
+
+    public function isApproved(): bool
+    {
+        $approvedStatus = SongStatus::where('StatusName', 'Approved')
+            ->orWhere('StatusName', 'approved')
+            ->orWhere('StatusName', 'Public')
+            ->orWhere('StatusName', 'public')
+            ->first();
+        
+        return $approvedStatus && $this->StatusID === $approvedStatus->StatusID;
+    }
+
+    public function isDeclined(): bool
+    {
+        return !is_null($this->declined_at);
     }
 
     public function playlists(): BelongsToMany

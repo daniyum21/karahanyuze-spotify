@@ -23,16 +23,30 @@ class Artist extends Model
         'ProfilePicture',
         'Description',
         'IsFeatured',
+        'declined_reason',
+        'declined_at',
+        'declined_by',
         'UUID',
     ];
 
     protected $casts = [
         'IsFeatured' => 'boolean',
+        'declined_at' => 'datetime',
     ];
 
     public function songs(): HasMany
     {
         return $this->hasMany(Song::class, 'UmuhanziID', 'UmuhanziID');
+    }
+
+    public function declinedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'declined_by', 'UserID');
+    }
+
+    public function isDeclined(): bool
+    {
+        return !is_null($this->declined_at);
     }
 
     public function getSlugAttribute(): string

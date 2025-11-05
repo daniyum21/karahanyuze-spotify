@@ -13,13 +13,34 @@ class AdminPlaylistController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $playlists = Playlist::withCount('songs')
-            ->latest()
-            ->paginate(20);
+        $sortBy = $request->get('sort', 'created_at');
+        $sortDirection = $request->get('direction', 'desc');
+        
+        // Validate sort direction
+        if (!in_array($sortDirection, ['asc', 'desc'])) {
+            $sortDirection = 'desc';
+        }
+        
+        // Validate sort column
+        $allowedSorts = ['PlaylistName', 'created_at', 'songs_count', 'IsFeatured'];
+        if (!in_array($sortBy, $allowedSorts)) {
+            $sortBy = 'created_at';
+        }
+        
+        $query = Playlist::withCount('songs');
+        
+        // Apply sorting
+        if ($sortBy === 'songs_count') {
+            $query->orderBy('songs_count', $sortDirection);
+        } else {
+            $query->orderBy($sortBy, $sortDirection);
+        }
+        
+        $playlists = $query->paginate(20)->withQueryString();
 
-        return view('admin.playlists.index', compact('playlists'));
+        return view('admin.playlists.index', compact('playlists', 'sortBy', 'sortDirection'));
     }
 
     /**
@@ -27,7 +48,10 @@ class AdminPlaylistController extends Controller
      */
     public function create()
     {
-        $songs = Song::where('StatusID', 2)->latest()->get();
+        $songs = Song::where('StatusID', 2)
+            ->with('artist')
+            ->latest()
+            ->get();
         return view('admin.playlists.create', compact('songs'));
     }
 
@@ -94,7 +118,10 @@ class AdminPlaylistController extends Controller
             ->with('songs')
             ->firstOrFail();
         
-        $allSongs = Song::where('StatusID', 2)->latest()->get();
+        $allSongs = Song::where('StatusID', 2)
+            ->with('artist')
+            ->latest()
+            ->get();
         $playlistSongIds = $playlist->songs->pluck('IndirimboID')->toArray();
 
         return view('admin.playlists.edit', compact('playlist', 'allSongs', 'playlistSongIds'));
