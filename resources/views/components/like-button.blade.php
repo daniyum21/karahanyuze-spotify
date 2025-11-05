@@ -43,6 +43,27 @@ function toggleLike() {
     likeBtn.disabled = true;
     const originalText = likeBtn.innerHTML;
     
+    // Optimistic UI update - update immediately before server responds
+    const currentIsLiked = likeBtn.classList.contains('bg-pink-500');
+    const newIsLiked = !currentIsLiked;
+    
+    if (newIsLiked) {
+        // Optimistically show as liked
+        likeBtn.classList.add('bg-pink-500', 'hover:bg-pink-600');
+        likeBtn.classList.remove('bg-zinc-800', 'hover:bg-zinc-700');
+        svg.setAttribute('fill', 'currentColor');
+        likeBtn.innerHTML = '<svg class="w-5 h-5" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg> Liked';
+    } else {
+        // Optimistically show as not liked
+        likeBtn.classList.remove('bg-pink-500', 'hover:bg-pink-600');
+        likeBtn.classList.add('bg-zinc-800', 'hover:bg-zinc-700');
+        svg.setAttribute('fill', 'none');
+        likeBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg> Like';
+    }
+    
+    // Store original state in case we need to revert
+    const originalIsLiked = currentIsLiked;
+    
     // Send AJAX request to toggle favorite
     fetch(toggleUrl, {
         method: 'POST',
@@ -142,6 +163,8 @@ function toggleLike() {
         if (!data) return; // Already handled redirect
         
         if (data.success) {
+            // Server confirmed the state - update UI to match server response
+            // (This should match our optimistic update, but we sync anyway)
             const isLiked = data.isFavorited;
             
             if (isLiked) {
@@ -156,6 +179,19 @@ function toggleLike() {
                 likeBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg> Like';
             }
         } else if (data.error) {
+            // Revert optimistic update on error
+            if (originalIsLiked) {
+                likeBtn.classList.add('bg-pink-500', 'hover:bg-pink-600');
+                likeBtn.classList.remove('bg-zinc-800', 'hover:bg-zinc-700');
+                svg.setAttribute('fill', 'currentColor');
+                likeBtn.innerHTML = '<svg class="w-5 h-5" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg> Liked';
+            } else {
+                likeBtn.classList.remove('bg-pink-500', 'hover:bg-pink-600');
+                likeBtn.classList.add('bg-zinc-800', 'hover:bg-zinc-700');
+                svg.setAttribute('fill', 'none');
+                likeBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg> Like';
+            }
+            
             if (typeof showErrorNotification === 'function') {
                 showErrorNotification(data.message || data.error || 'An error occurred. Please try again.');
             }
@@ -163,6 +199,20 @@ function toggleLike() {
     })
     .catch(error => {
         console.error('Error toggling like:', error);
+        
+        // Revert optimistic update on error
+        if (originalIsLiked) {
+            likeBtn.classList.add('bg-pink-500', 'hover:bg-pink-600');
+            likeBtn.classList.remove('bg-zinc-800', 'hover:bg-zinc-700');
+            svg.setAttribute('fill', 'currentColor');
+            likeBtn.innerHTML = '<svg class="w-5 h-5" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg> Liked';
+        } else {
+            likeBtn.classList.remove('bg-pink-500', 'hover:bg-pink-600');
+            likeBtn.classList.add('bg-zinc-800', 'hover:bg-zinc-700');
+            svg.setAttribute('fill', 'none');
+            likeBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg> Like';
+        }
+        
         // Show user-friendly error message
         const message = error.message || 'An error occurred. Please try again.';
         if (typeof showErrorNotification === 'function') {

@@ -195,17 +195,18 @@ class UserDashboardController extends Controller
             $entity = $modelClass::findOrFail($id);
             
             // Check if already favorited using polymorphic relationship
+            // First, check if it exists
             $favorite = Favorite::where('UserID', $user->UserID)
                 ->where('FavoriteType', $favoriteType)
                 ->where('FavoriteID', $id)
                 ->first();
 
             if ($favorite) {
-                // Remove from favorites
+                // It already exists, so we're removing it (unlike)
                 $favorite->delete();
                 $isFavorited = false;
             } else {
-                // Add to favorites using polymorphic relationship
+                // It doesn't exist, so we're adding it (like)
                 // Prepare data array
                 $favoriteData = [
                     'UserID' => $user->UserID,
@@ -219,8 +220,27 @@ class UserDashboardController extends Controller
                 }
                 // For non-songs, IndirimboID will be null (must be nullable in DB)
                 
-                $favorite = Favorite::create($favoriteData);
-                $isFavorited = true;
+                // Use create with try-catch to handle any race conditions
+                try {
+                    $favorite = Favorite::create($favoriteData);
+                    $isFavorited = true;
+                } catch (\Illuminate\Database\QueryException $e) {
+                    // If we get a duplicate entry error, it means another request already created it
+                    // Check again to see the current state
+                    $existingFavorite = Favorite::where('UserID', $user->UserID)
+                        ->where('FavoriteType', $favoriteType)
+                        ->where('FavoriteID', $id)
+                        ->first();
+                    
+                    if ($existingFavorite) {
+                        // It was created by another request, so delete it (toggle behavior)
+                        $existingFavorite->delete();
+                        $isFavorited = false;
+                    } else {
+                        // Some other error, re-throw
+                        throw $e;
+                    }
+                }
             }
 
             return response()->json([

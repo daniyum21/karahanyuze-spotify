@@ -633,17 +633,33 @@ class AdminSongController extends Controller
             return back()->withErrors(['error' => 'An unexpected error occurred: ' . $e->getMessage()])->withInput();
         }
 
-        // Cache status lookup - this is a static lookup that rarely changes
-        $pendingStatus = Cache::remember('song_status_pending', 3600, function () {
-            return SongStatus::where('StatusName', 'Pending')
-                ->orWhere('StatusName', 'pending')
-                ->orWhere('StatusName', 'Pending Approval')
-                ->first() 
-                ?? SongStatus::find(1) 
-                ?? SongStatus::first();
-        });
+        // Determine status based on whether user is admin
+        $isAdmin = Auth::user() && Auth::user()->isAdmin();
         
-        if (!$pendingStatus) {
+        if ($isAdmin) {
+            // Admin songs are auto-approved (StatusID = 2 is typically "Approved" or "Public")
+            $status = Cache::remember('song_status_approved', 3600, function () {
+                return SongStatus::where('StatusName', 'Approved')
+                    ->orWhere('StatusName', 'approved')
+                    ->orWhere('StatusName', 'Public')
+                    ->orWhere('StatusName', 'public')
+                    ->first() 
+                    ?? SongStatus::find(2) 
+                    ?? SongStatus::first();
+            });
+        } else {
+            // Regular users' songs require approval
+            $status = Cache::remember('song_status_pending', 3600, function () {
+                return SongStatus::where('StatusName', 'Pending')
+                    ->orWhere('StatusName', 'pending')
+                    ->orWhere('StatusName', 'Pending Approval')
+                    ->first() 
+                    ?? SongStatus::find(1) 
+                    ?? SongStatus::first();
+            });
+        }
+        
+        if (!$status) {
             return back()->withErrors(['status' => 'Unable to set song status. Please contact administrator.'])->withInput();
         }
 
@@ -719,7 +735,7 @@ class AdminSongController extends Controller
                         'IndirimboName' => $songName,
                         'Description' => $validated['Description'] ?? '',
                         'Lyrics' => $validated['Lyrics'] ?? '',
-                        'StatusID' => $pendingStatus->StatusID,
+                        'StatusID' => $status->StatusID,
                         'IsFeatured' => false,
                         'IsPrivate' => false,
                         'UUID' => (string) Str::uuid(),

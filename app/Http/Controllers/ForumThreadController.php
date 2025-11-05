@@ -76,12 +76,22 @@ class ForumThreadController extends Controller
             'body' => 'nullable|string|max:10000',
         ]);
 
+        $user = Auth::user();
+        $isAdmin = $user->isAdmin();
+        
         $thread = ForumThread::create([
             'title' => $validated['title'],
             'body' => $validated['body'] ?? null,
             'UserID' => Auth::id(),
-            'is_approved' => false, // Threads require admin approval
+            'is_approved' => $isAdmin, // Admin threads are auto-approved
+            'approved_by' => $isAdmin ? Auth::id() : null,
+            'approved_at' => $isAdmin ? now() : null,
         ]);
+
+        if ($isAdmin) {
+            return redirect()->route('forum.index')
+                ->with('success', 'Thread created successfully!');
+        }
 
         return redirect()->route('forum.index')
             ->with('success', 'Your thread has been submitted and is pending admin approval. You will be notified once it is approved.');

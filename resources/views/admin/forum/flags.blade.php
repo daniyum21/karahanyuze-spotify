@@ -41,11 +41,22 @@
                             <td class="px-6 py-4 text-zinc-300 capitalize">{{ $flag->flaggable_type }}</td>
                             <td class="px-6 py-4">
                                 @if($flag->flaggable_type === 'thread')
-                                    <a href="{{ route('forum.show', $flag->flaggable->slug) }}" target="_blank" class="text-white hover:text-green-500 transition-colors">
+                                    <a href="{{ route('forum.show', $flag->flaggable->slug) }}" target="_blank" class="text-white hover:text-green-500 transition-colors underline">
                                         {{ \Illuminate\Support\Str::limit($flag->flaggable->title, 50) }}
                                     </a>
                                 @else
-                                    <span class="text-zinc-300">{{ \Illuminate\Support\Str::limit(strip_tags($flag->flaggable->body ?? ''), 50) }}</span>
+                                    @php
+                                        $comment = $flag->flaggable;
+                                        $thread = $comment->thread ?? null;
+                                    @endphp
+                                    @if($thread)
+                                        <a href="{{ route('forum.show', $thread->slug) }}#comment-{{ $comment->CommentID }}" target="_blank" class="text-white hover:text-green-500 transition-colors underline">
+                                            {{ \Illuminate\Support\Str::limit(strip_tags($comment->body ?? ''), 50) }}
+                                        </a>
+                                        <p class="text-xs text-zinc-500 mt-1">From thread: {{ \Illuminate\Support\Str::limit($thread->title, 40) }}</p>
+                                    @else
+                                        <span class="text-zinc-300">{{ \Illuminate\Support\Str::limit(strip_tags($comment->body ?? ''), 50) }}</span>
+                                    @endif
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-zinc-300">

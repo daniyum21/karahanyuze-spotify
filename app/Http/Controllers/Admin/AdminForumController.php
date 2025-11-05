@@ -26,10 +26,17 @@ class AdminForumController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
         
+        // Load flags and manually attach flaggable relationships
+        // (Cannot use eager loading with custom flaggable() method)
         $unresolvedFlags = ForumFlag::where('is_resolved', false)
-            ->with(['user', 'flaggable'])
+            ->with('user')
             ->orderBy('created_at', 'desc')
             ->paginate(20);
+        
+        // Manually load flaggable relationships
+        foreach ($unresolvedFlags as $flag) {
+            $flag->flaggable = $flag->getFlaggableAttribute();
+        }
         
         return view('admin.forum.index', compact('threads', 'pendingThreads', 'unresolvedFlags'));
     }
@@ -163,12 +170,13 @@ class AdminForumController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
-        // Manually load flaggable relationships
+        // Manually load flaggable relationships with their related data
         foreach ($flags as $flag) {
             if ($flag->flaggable_type === 'thread') {
                 $flag->flaggable = ForumThread::find($flag->flaggable_id);
             } elseif ($flag->flaggable_type === 'comment') {
-                $flag->flaggable = ForumComment::find($flag->flaggable_id);
+                // Load comment with its thread relationship
+                $flag->flaggable = ForumComment::with('thread')->find($flag->flaggable_id);
             }
         }
 

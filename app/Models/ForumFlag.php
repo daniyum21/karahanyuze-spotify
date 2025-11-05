@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class ForumFlag extends Model
 {
@@ -46,8 +45,10 @@ class ForumFlag extends Model
 
     /**
      * Get the flaggable model (thread or comment)
+     * Note: Cannot use standard morphTo because we store simple strings ('thread', 'comment')
+     * instead of full class names. This accessor method handles the mapping manually.
      */
-    public function flaggable()
+    public function getFlaggableAttribute()
     {
         $type = $this->attributes['flaggable_type'] ?? null;
         $id = $this->attributes['flaggable_id'] ?? null;
