@@ -40,24 +40,29 @@ class ItoreroController extends Controller
                 }])
                 ->first();
         } else {
-            // Try to find by ID first (for backward compatibility)
-            $itorero = Itorero::find($slug);
+            // Try to find by UUID first (in case slug is actually a UUID)
+            $itorero = Itorero::where('UUID', $slug)->first();
             
-            // If not found by ID, find by slug
+            // If not found by UUID, try to find by ID (for backward compatibility)
+            if (!$itorero && is_numeric($slug)) {
+                $itorero = Itorero::find($slug);
+            }
+            
+            // If still not found, find by matching slug (virtual attribute)
             if (!$itorero) {
-                // Try direct database query first
-                $itorero = Itorero::where('slug', $slug)->first();
-                
-                // Fallback: try to find by matching slug in collection (more expensive)
-                if (!$itorero) {
-                    try {
-                        $itorero = Itorero::all()->first(function($item) use ($slug) {
-                            return isset($item->slug) && $item->slug === $slug;
-                        });
-                    } catch (\Exception $e) {
-                        // If collection loading fails, just return null
-                        \Log::warning('Error loading itorero collection for slug lookup', ['slug' => $slug, 'error' => $e->getMessage()]);
-                    }
+                try {
+                    // Load all itoreros and find by slug attribute
+                    $itorero = Itorero::all()->first(function($item) use ($slug) {
+                        return $item->slug === $slug;
+                    });
+                } catch (\Exception $e) {
+                    // If collection loading fails, try finding by name (fuzzy match)
+                    \Log::warning('Error loading itorero collection for slug lookup', ['slug' => $slug, 'error' => $e->getMessage()]);
+                    
+                    // Try to find by name that matches the slug
+                    $nameFromSlug = str_replace('-', ' ', $slug);
+                    $nameFromSlug = ucwords($nameFromSlug);
+                    $itorero = Itorero::where('ItoreroName', 'LIKE', '%' . $nameFromSlug . '%')->first();
                 }
             }
             
