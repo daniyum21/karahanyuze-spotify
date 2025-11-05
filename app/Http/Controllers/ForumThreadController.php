@@ -51,6 +51,12 @@ class ForumThreadController extends Controller
      */
     public function create()
     {
+        // Ensure user is verified
+        if (!Auth::user()->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice')
+                ->with('error', 'Please verify your email address before creating a thread.');
+        }
+        
         return view('forum.create');
     }
 
@@ -59,6 +65,12 @@ class ForumThreadController extends Controller
      */
     public function store(Request $request)
     {
+        // Ensure user is verified
+        if (!Auth::user()->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice')
+                ->with('error', 'Please verify your email address before creating a thread.');
+        }
+        
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'body' => 'nullable|string|max:10000',

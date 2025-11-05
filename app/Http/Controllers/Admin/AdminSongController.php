@@ -42,6 +42,9 @@ class AdminSongController extends Controller
                 } else {
                     $query->where('StatusID', 1); // Fallback to ID 1
                 }
+                
+                // Exclude declined songs from pending list
+                $query->whereNull('declined_at');
             } elseif ($request->status === 'approved') {
                 $approvedStatus = SongStatus::where('StatusName', 'Approved')
                     ->orWhere('StatusName', 'approved')
@@ -407,9 +410,56 @@ class AdminSongController extends Controller
         $song->declined_reason = $validated['declined_reason'];
         $song->declined_at = now();
         $song->declined_by = Auth::id();
+        // Don't change the status - just mark as declined
+        // This way it's not pending, not public, just declined
         $song->save();
 
-        return back()->with('success', 'Song declined successfully. The user will be notified of the reason.');
+        // Redirect back to pending list if that's where we came from
+        $redirectParams = [];
+        if ($request->has('status') && $request->status === 'pending') {
+            $redirectParams['status'] = 'pending';
+        }
+
+        return redirect()->route('admin.songs.index', $redirectParams)
+            ->with('success', 'Song declined successfully. The user will be notified of the reason.');
+    }
+    
+    /**
+     * Approve a song (clears decline status if it was declined)
+     */
+    public function approve($uuid)
+    {
+        $song = Song::where('UUID', $uuid)->firstOrFail();
+        
+        // Find approved status
+        $approvedStatus = SongStatus::where('StatusName', 'Approved')
+            ->orWhere('StatusName', 'approved')
+            ->orWhere('StatusName', 'Public')
+            ->orWhere('StatusName', 'public')
+            ->first();
+        
+        if (!$approvedStatus) {
+            $approvedStatus = SongStatus::find(2); // Fallback to ID 2
+        }
+        
+        if ($approvedStatus) {
+            $song->StatusID = $approvedStatus->StatusID;
+        }
+        
+        // Clear decline status if it was declined
+        $song->declined_reason = null;
+        $song->declined_at = null;
+        $song->declined_by = null;
+        $song->save();
+
+        // Redirect back to pending list if that's where we came from
+        $redirectParams = [];
+        if (request()->has('status') && request()->status === 'pending') {
+            $redirectParams['status'] = 'pending';
+        }
+
+        return redirect()->route('admin.songs.index', $redirectParams)
+            ->with('success', 'Song approved successfully!');
     }
 
     /**

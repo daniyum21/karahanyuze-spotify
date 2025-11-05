@@ -33,6 +33,35 @@ class RegisterController extends Controller
      */
     public function register(Request $request)
     {
+        // Additional spam prevention: Check for suspicious email patterns
+        $email = $request->Email;
+        $suspiciousPatterns = [
+            '/rambler\.ru$/i',
+            '/mail\.ru$/i',
+            '/yandex\.ru$/i',
+            '/temp.*@/i',
+            '/test.*@/i',
+            '/fake.*@/i',
+        ];
+        
+        $isSuspicious = false;
+        foreach ($suspiciousPatterns as $pattern) {
+            if (preg_match($pattern, $email)) {
+                $isSuspicious = true;
+                break;
+            }
+        }
+        
+        // Block suspicious emails or require manual review
+        if ($isSuspicious) {
+            \Log::warning('Suspicious registration attempt blocked', [
+                'email' => $email,
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+            return back()->withErrors(['Email' => 'This email domain is not allowed. Please use a valid email address.'])->withInput();
+        }
+        
         $validator = Validator::make($request->all(), [
             'FirstName' => 'required|string|max:255',
             'LastName' => 'required|string|max:255',

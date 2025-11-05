@@ -14,6 +14,11 @@ class ForumCommentController extends Controller
      */
     public function store(Request $request, $threadSlug)
     {
+        // Ensure user is verified
+        if (!Auth::user()->hasVerifiedEmail()) {
+            return back()->with('error', 'Please verify your email address before posting comments.');
+        }
+        
         $thread = ForumThread::where('slug', $threadSlug)->firstOrFail();
         
         // Check if thread is locked

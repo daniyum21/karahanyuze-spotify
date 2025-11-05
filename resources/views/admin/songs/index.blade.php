@@ -161,22 +161,13 @@
                                     Edit
                                 </a>
                                 @endif
-                                <form 
-                                    action="{{ route('admin.songs.destroy', $song->UUID) }}" 
-                                    method="POST" 
-                                    class="inline"
-                                    onsubmit="return confirm('Are you sure you want to delete this song?');"
-                                    onclick="event.stopPropagation();"
+                                <button 
+                                    type="button"
+                                    onclick="showDeleteSongWarning('{{ $song->UUID }}', '{{ addslashes($song->IndirimboName) }}'); event.stopPropagation();"
+                                    class="text-red-400 hover:text-red-300 transition-colors"
                                 >
-                                    @csrf
-                                    @method('DELETE')
-                                    <button 
-                                        type="submit" 
-                                        class="text-red-400 hover:text-red-300 transition-colors"
-                                    >
-                                        Delete
-                                    </button>
-                                </form>
+                                    Delete
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -273,5 +264,71 @@
     };
 </script>
 @endif
+
+<!-- Delete Song Warning Modal -->
+<div id="deleteSongWarningModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center">
+    <div class="bg-zinc-800 rounded-lg p-6 max-w-md w-full mx-4">
+        <div class="flex items-start gap-4 mb-4">
+            <div class="flex-shrink-0">
+                <div class="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </div>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-xl font-bold text-white mb-2">Delete Song</h3>
+                <p class="text-zinc-300 mb-4">Are you sure you want to delete this song? This action cannot be undone.</p>
+                <div class="bg-red-500/10 border border-red-500/50 rounded-lg p-3 mb-4">
+                    <p class="text-red-300 text-sm font-medium mb-1">Song Name:</p>
+                    <p class="text-white text-sm" id="deleteSongName"></p>
+                </div>
+                <div class="bg-yellow-500/10 border border-yellow-500/50 rounded-lg p-3 mb-4">
+                    <p class="text-yellow-300 text-sm flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        The audio file and associated data will be permanently deleted.
+                    </p>
+                </div>
+                <form id="deleteSongForm" method="POST" class="inline">
+                    @csrf
+                    @method('DELETE')
+                    <div class="flex items-center gap-3">
+                        <button type="submit" class="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors flex-1">
+                            Delete Song
+                        </button>
+                        <button type="button" onclick="closeDeleteSongWarning()" class="px-6 py-3 bg-zinc-700 hover:bg-zinc-600 text-white font-semibold rounded-lg transition-colors">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showDeleteSongWarning(uuid, songName) {
+    document.getElementById('deleteSongName').textContent = songName;
+    document.getElementById('deleteSongForm').action = '{{ url("/admin/songs") }}/' + uuid;
+    document.getElementById('deleteSongWarningModal').classList.remove('hidden');
+    document.getElementById('deleteSongWarningModal').classList.add('flex');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeDeleteSongWarning() {
+    document.getElementById('deleteSongWarningModal').classList.add('hidden');
+    document.getElementById('deleteSongWarningModal').classList.remove('flex');
+    document.body.style.overflow = '';
+}
+
+// Close modal when clicking outside
+document.getElementById('deleteSongWarningModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeDeleteSongWarning();
+    }
+});
+</script>
 @endsection
 
