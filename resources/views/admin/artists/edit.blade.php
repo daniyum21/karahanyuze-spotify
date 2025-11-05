@@ -172,17 +172,22 @@
             </form>
 
             <!-- Current Artist Songs -->
-            @if($artist->songs->count() > 0)
+            @if($artist->songs->filter(function($song) { return !empty($song->IndirimboUrl); })->count() > 0)
             <div class="mt-12">
                 <label class="block text-sm font-medium text-white mb-2">Songs by {{ $artist->StageName }}</label>
                 <p class="text-xs text-zinc-400 mb-3">Click on any song to play it in the music player</p>
                 <div class="max-h-96 overflow-y-auto bg-zinc-800 border border-zinc-700 rounded-lg p-4 mb-4">
                     <div class="space-y-2">
-                        @foreach($artist->songs as $index => $artistSong)
+                        @php
+                            $songsWithAudio = $artist->songs->filter(function($song) { return !empty($song->IndirimboUrl); });
+                        @endphp
+                        @foreach($songsWithAudio as $index => $artistSong)
                         <div 
                             id="song-item-{{ $artistSong->IndirimboID }}"
-                            class="flex items-center justify-between gap-3 p-3 bg-zinc-700 rounded-lg hover:bg-zinc-600 transition-colors cursor-pointer"
+                            class="flex items-center justify-between gap-3 p-3 bg-zinc-700 rounded-lg hover:bg-zinc-600 transition-colors {{ !empty($artistSong->IndirimboUrl) ? 'cursor-pointer' : 'cursor-not-allowed opacity-50' }}"
+                            @if(!empty($artistSong->IndirimboUrl))
                             onclick="playSongFromList({{ $artistSong->IndirimboID }}, {{ $index }})"
+                            @endif
                         >
                             <div class="flex items-center gap-3 flex-1 min-w-0">
                                 <input 
@@ -270,7 +275,10 @@
 
 @if($artist->songs->count() > 0)
 @php
-    $songList = $artist->songs->map(function($song) {
+    $songList = $artist->songs->filter(function($song) {
+        // Only include songs that have an audio URL
+        return !empty($song->IndirimboUrl);
+    })->map(function($song) {
         return [
             'id' => $song->IndirimboID,
             'name' => $song->IndirimboName,
@@ -278,7 +286,7 @@
             'artist' => $song->artist ? $song->artist->StageName : ($song->orchestra ? $song->orchestra->OrchestreName : ($song->itorero ? $song->itorero->ItoreroName : 'Unknown')),
             'audioUrl' => route('indirimbo.audio', $song->IndirimboID)
         ];
-    })->toArray();
+    })->values()->toArray(); // values() reindexes the array after filtering
 @endphp
 <script>
     // Store the song list for this artist page

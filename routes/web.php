@@ -486,26 +486,32 @@ Route::get('/audio/{id}', function ($id) {
     // Remove leading slash if present
     $url = ltrim($url, '/');
     
-    // Base directory for audio files
-    $basePath = storage_path('app/Audios/');
+    // Base directory for storage
+    $basePath = storage_path('app/');
     
     // Try different variations of the filename
     $possiblePaths = [];
     
-    // 1. Direct match (with or without extension)
+    // 1. If URL already includes "Audios/", use it directly with basePath
+    // This handles: "Audios/filename.mp3" -> storage/app/Audios/filename.mp3
     $possiblePaths[] = $basePath . $url;
     
-    // 2. If no extension, try with .mp3
-    if (!pathinfo($url, PATHINFO_EXTENSION)) {
-        $possiblePaths[] = $basePath . $url . '.mp3';
+    // 2. If URL doesn't include folder, try adding "Audios/"
+    // This handles: "filename.mp3" -> storage/app/Audios/filename.mp3
+    if (!str_starts_with($url, 'Audios/')) {
+        $possiblePaths[] = $basePath . 'Audios/' . $url;
     }
     
-    // 3. Just the filename (basename)
-    $possiblePaths[] = $basePath . basename($url);
+    // 3. Just the filename in Audios folder (basename)
+    $possiblePaths[] = $basePath . 'Audios/' . basename($url);
     
-    // 4. Basename with .mp3 if no extension
+    // 4. If no extension, try with .mp3
     if (!pathinfo($url, PATHINFO_EXTENSION)) {
-        $possiblePaths[] = $basePath . basename($url) . '.mp3';
+        $possiblePaths[] = $basePath . $url . '.mp3';
+        if (!str_starts_with($url, 'Audios/')) {
+            $possiblePaths[] = $basePath . 'Audios/' . $url . '.mp3';
+        }
+        $possiblePaths[] = $basePath . 'Audios/' . basename($url) . '.mp3';
     }
     
     // Find the first existing file
@@ -519,12 +525,15 @@ Route::get('/audio/{id}', function ($id) {
     
     // If still not found, try to find by partial match (first 50 characters)
     if (!$audioPath && strlen($url) > 50) {
-        $searchPattern = substr($url, 0, 50);
-        $files = glob($basePath . '*');
-        foreach ($files as $file) {
-            if (strpos(basename($file), $searchPattern) !== false) {
-                $audioPath = $file;
-                break;
+        $searchPattern = substr(basename($url), 0, 50);
+        $audiosPath = storage_path('app/Audios/');
+        if (is_dir($audiosPath)) {
+            $files = glob($audiosPath . '*');
+            foreach ($files as $file) {
+                if (strpos(basename($file), $searchPattern) !== false) {
+                    $audioPath = $file;
+                    break;
+                }
             }
         }
     }

@@ -113,7 +113,10 @@ class AdminArtistController extends Controller
     public function edit($uuid)
     {
         $artist = Artist::where('UUID', $uuid)
-            ->with('songs')
+            ->with(['songs' => function($query) {
+                // Load all songs for this artist (including pending)
+                $query->orderBy('created_at', 'desc');
+            }])
             ->firstOrFail();
         
         $allSongs = Song::where('StatusID', 2)
