@@ -101,12 +101,10 @@
                     <!-- Description -->
                     <div>
                         <label for="Description" class="block text-sm font-medium text-white mb-2">Description</label>
+                        <div id="Description" style="min-height: 200px;">{!! old('Description', $artist->Description) !!}</div>
                         <textarea 
-                            id="Description" 
                             name="Description" 
-                            rows="6"
-                            class="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                            placeholder="Enter artist description"
+                            style="display: none;"
                         >{{ old('Description', $artist->Description) }}</textarea>
                     </div>
 
@@ -695,6 +693,92 @@ function removeSongFromArtist(button, songId) {
         }
     }
 }
+
+// Quill.js WYSIWYG Editor for Description
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('Description') && !document.getElementById('Description').classList.contains('ql-editor')) {
+        // Load Quill.js if not already loaded
+        if (typeof Quill === 'undefined') {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = 'https://cdn.quilljs.com/1.3.6/quill.snow.css';
+            document.head.appendChild(link);
+            
+            const script = document.createElement('script');
+            script.src = 'https://cdn.quilljs.com/1.3.6/quill.js';
+            script.onload = function() {
+                initializeQuill();
+            };
+            document.head.appendChild(script);
+        } else {
+            initializeQuill();
+        }
+    }
+    
+    function initializeQuill() {
+        const descriptionQuill = new Quill('#Description', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'color': [] }, { 'background': [] }],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    [{ 'align': [] }],
+                    ['link'],
+                    ['clean']
+                ]
+            },
+            placeholder: 'Enter artist description'
+        });
+        
+        // Add custom styles for dark theme
+        const style = document.createElement('style');
+        style.textContent = `
+            .ql-editor {
+                min-height: 200px;
+                background-color: #18181b;
+                color: #fff;
+            }
+            .ql-container {
+                background-color: #18181b;
+                color: #fff;
+                border-color: #3f3f46;
+            }
+            .ql-toolbar {
+                background-color: #27272a;
+                border-color: #3f3f46;
+            }
+            .ql-toolbar .ql-stroke {
+                stroke: #fff;
+            }
+            .ql-toolbar .ql-fill {
+                fill: #fff;
+            }
+            .ql-toolbar .ql-picker-label {
+                color: #fff;
+            }
+            .ql-toolbar button:hover, .ql-toolbar button.ql-active {
+                color: #22c55e;
+            }
+            .ql-toolbar .ql-stroke.ql-thin {
+                stroke: #fff;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Sync Quill content to textarea before form submission
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function() {
+                const descriptionInput = document.querySelector('textarea[name="Description"]');
+                if (descriptionInput) {
+                    descriptionInput.value = descriptionQuill.root.innerHTML;
+                }
+            });
+        }
+    }
+});
 </script>
 @endsection
 

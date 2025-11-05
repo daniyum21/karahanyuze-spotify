@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class AdminSongController extends Controller
@@ -445,9 +446,11 @@ class AdminSongController extends Controller
         $artist = Artist::where('UUID', $uuid)->firstOrFail();
         $statuses = SongStatus::orderBy('StatusName', 'asc')->get();
         
-        // Get existing songs for this artist
+        // Get existing songs for this artist (only with audio URLs)
         $songs = Song::where('UmuhanziID', $artist->UmuhanziID)
-            ->with(['status', 'user'])
+            ->whereNotNull('IndirimboUrl')
+            ->where('IndirimboUrl', '!=', '')
+            ->with(['status', 'user', 'artist'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
         
@@ -481,9 +484,11 @@ class AdminSongController extends Controller
         $orchestra = Orchestra::where('UUID', $uuid)->firstOrFail();
         $statuses = SongStatus::orderBy('StatusName', 'asc')->get();
         
-        // Get existing songs for this orchestra
+        // Get existing songs for this orchestra (only with audio URLs)
         $songs = Song::where('OrchestreID', $orchestra->OrchestreID)
-            ->with(['status', 'user'])
+            ->whereNotNull('IndirimboUrl')
+            ->where('IndirimboUrl', '!=', '')
+            ->with(['status', 'user', 'orchestra'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
         
@@ -517,9 +522,11 @@ class AdminSongController extends Controller
         $itorero = Itorero::where('UUID', $uuid)->firstOrFail();
         $statuses = SongStatus::orderBy('StatusName', 'asc')->get();
         
-        // Get existing songs for this itorero
+        // Get existing songs for this itorero (only with audio URLs)
         $songs = Song::where('ItoreroID', $itorero->ItoreroID)
-            ->with(['status', 'user'])
+            ->whereNotNull('IndirimboUrl')
+            ->where('IndirimboUrl', '!=', '')
+            ->with(['status', 'user', 'itorero'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
         
@@ -549,65 +556,40 @@ class AdminSongController extends Controller
      */
     private function storeSongForEntity(Request $request, $entity, $entityType, $entityId, $entityIdField, $entityUuid, $isAdmin = false)
     {
-        // Log incoming request for debugging (minimal logging for performance)
-        \Log::info('Admin song upload request', [
-            'audio_count' => $request->hasFile('audio') ? count($request->file('audio')) : 0,
-            'has_image' => $request->hasFile('image'),
-            'entity_type' => $entityType,
-        ]);
-        
         // First, manually validate that we have at least one file
         if (!$request->hasFile('audio') || !is_array($request->file('audio')) || count($request->file('audio')) === 0) {
-            \Log::warning('Admin song upload: No audio files provided', [
-                'has_audio' => $request->hasFile('audio'),
-                'audio_type' => $request->hasFile('audio') ? gettype($request->file('audio')) : 'none',
-            ]);
             return back()->withErrors(['audio' => 'Please select at least one audio file to upload.'])->withInput();
         }
         
+        // Lightweight validation - avoid reading entire files for validation
         try {
             $validated = $request->validate([
                 'IndirimboName' => 'nullable|string|max:255',
                 'Description' => 'nullable|string',
                 'Lyrics' => 'nullable|string',
                 'audio' => 'required|array',
-                'audio.*' => 'required|file|mimes:mp3|max:51200',
+                'audio.*' => 'required|file', // Remove mimes check - we'll do basic extension check instead
                 'image' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',
                 'song_names' => 'nullable|array',
                 'song_names.*' => 'nullable|string|max:255',
             ]);
-            
-            // Validation passed - minimal logging
         } catch (\Illuminate\Validation\ValidationException $e) {
-            \Log::error('Admin song upload: Validation failed', [
-                'errors' => $e->errors(),
-                'request_data' => $request->except(['audio', 'image']),
-            ]);
             return back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
-            \Log::error('Admin song upload: Unexpected error during validation', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
             return back()->withErrors(['error' => 'An unexpected error occurred: ' . $e->getMessage()])->withInput();
         }
 
-        // Get pending status for all uploaded songs (cache this query for better performance)
-        $pendingStatus = SongStatus::where('StatusName', 'Pending')
-            ->orWhere('StatusName', 'pending')
-            ->orWhere('StatusName', 'Pending Approval')
-            ->first();
+        // Cache status lookup - this is a static lookup that rarely changes
+        $pendingStatus = Cache::remember('song_status_pending', 3600, function () {
+            return SongStatus::where('StatusName', 'Pending')
+                ->orWhere('StatusName', 'pending')
+                ->orWhere('StatusName', 'Pending Approval')
+                ->first() 
+                ?? SongStatus::find(1) 
+                ?? SongStatus::first();
+        });
         
         if (!$pendingStatus) {
-            $pendingStatus = SongStatus::find(1);
-        }
-        
-        if (!$pendingStatus) {
-            $pendingStatus = SongStatus::first();
-        }
-        
-        if (!$pendingStatus) {
-            \Log::error('Admin song upload: No status found at all!');
             return back()->withErrors(['status' => 'Unable to set song status. Please contact administrator.'])->withInput();
         }
 
@@ -620,86 +602,112 @@ class AdminSongController extends Controller
         // Handle multiple audio file uploads
         if ($request->hasFile('audio')) {
             $audioFiles = $request->file('audio');
+            $userId = auth()->id();
+            $now = now();
+            $imageFileName = null;
+            
+            // Handle image file upload once (only for first file if provided)
+            if ($request->hasFile('image')) {
+                $imageFile = $request->file('image');
+                $extension = $imageFile->getClientOriginalExtension();
+                $imageFileName = Str::random(100) . '_' . time() . '.' . $extension;
+                $imageFile->storeAs('Pictures', $imageFileName, 'local');
+            }
+            
+            // Prepare bulk insert data for faster database operations
+            $songsToInsert = [];
             
             foreach ($audioFiles as $index => $audioFile) {
                 try {
-                    $song = new Song();
+                    // Quick validation - check extension only (faster than mime type check)
+                    $extension = strtolower($audioFile->getClientOriginalExtension());
+                    if ($extension !== 'mp3') {
+                        $errors[] = $audioFile->getClientOriginalName() . ' is not an MP3 file.';
+                        continue;
+                    }
+                    
+                    // Check file size (50MB max)
+                    if ($audioFile->getSize() > 52428800) {
+                        $errors[] = $audioFile->getClientOriginalName() . ' exceeds 50MB limit.';
+                        continue;
+                    }
                     
                     // Get song name from user input or extract from filename
                     if (!empty($songNames[$index]) && trim($songNames[$index]) !== '') {
-                        $song->IndirimboName = trim($songNames[$index]);
+                        $songName = trim($songNames[$index]);
                     } else {
                         // Extract from filename
                         $originalName = $audioFile->getClientOriginalName();
                         $nameWithoutExt = pathinfo($originalName, PATHINFO_FILENAME);
                         $songName = str_replace(['_', '-'], ' ', $nameWithoutExt);
                         $songName = ucwords(strtolower($songName));
-                        $song->IndirimboName = $songName;
                     }
                     
-                    $song->Description = $validated['Description'] ?? '';
-                    $song->Lyrics = $validated['Lyrics'] ?? '';
-                    $song->StatusID = $pendingStatus->StatusID;
-                    $song->IsFeatured = false;
-                    $song->IsPrivate = false; // Set default value for IsPrivate
-                    $song->UUID = (string) Str::uuid();
-                    
-                    // Set the entity ID and explicitly clear other entity fields
-                    // This ensures a song only belongs to one entity (artist, orchestra, or itorero)
-                    // We must explicitly set all three fields even if null, because MySQL requires it
-                    if ($entityIdField === 'UmuhanziID') {
-                        $song->UmuhanziID = $entityId;
-                        $song->OrchestreID = null;
-                        $song->ItoreroID = null;
-                    } elseif ($entityIdField === 'OrchestreID') {
-                        $song->UmuhanziID = null;
-                        $song->OrchestreID = $entityId;
-                        $song->ItoreroID = null;
-                    } elseif ($entityIdField === 'ItoreroID') {
-                        $song->UmuhanziID = null;
-                        $song->OrchestreID = null;
-                        $song->ItoreroID = $entityId;
-                    } else {
-                        // Fallback: set all to null if entityIdField is unknown
-                        $song->UmuhanziID = null;
-                        $song->OrchestreID = null;
-                        $song->ItoreroID = null;
-                    }
-                    
-                    $song->UserID = auth()->id();
-                    $song->ProfilePicture = ''; // Set default empty string for ProfilePicture
-
                     // Handle audio file upload
-                    $extension = $audioFile->getClientOriginalExtension();
                     $fileName = Str::random(100) . '_' . time() . '_' . $index . '.' . $extension;
-                    $path = $audioFile->storeAs('Audios', $fileName, 'local');
-                    $song->IndirimboUrl = 'Audios/' . $fileName;
-
-                    // Handle image file upload (only for first file if provided)
-                    if ($index === 0 && $request->hasFile('image')) {
-                        $imageFile = $request->file('image');
-                        $extension = $imageFile->getClientOriginalExtension();
-                        $imageFileName = Str::random(100) . '_' . time() . '.' . $extension;
-                        $imagePath = $imageFile->storeAs('Pictures', $imageFileName, 'local');
-                        $song->ProfilePicture = 'Pictures/' . $imageFileName;
+                    $audioFile->storeAs('Audios', $fileName, 'local');
+                    
+                    // Set entity fields based on entity type
+                    $umuhanziId = null;
+                    $orchestreId = null;
+                    $itoreroId = null;
+                    
+                    if ($entityIdField === 'UmuhanziID') {
+                        $umuhanziId = $entityId;
+                    } elseif ($entityIdField === 'OrchestreID') {
+                        $orchestreId = $entityId;
+                    } elseif ($entityIdField === 'ItoreroID') {
+                        $itoreroId = $entityId;
                     }
-
-                    // Save using Eloquent - all fields are already set on the model
-                    // The fields are in fillable, so they should be included in the insert
-                    $song->save();
-                    $uploadedSongs[] = $song->IndirimboName;
+                    
+                    // Prepare song data for bulk insert
+                    $songsToInsert[] = [
+                        'IndirimboName' => $songName,
+                        'Description' => $validated['Description'] ?? '',
+                        'Lyrics' => $validated['Lyrics'] ?? '',
+                        'StatusID' => $pendingStatus->StatusID,
+                        'IsFeatured' => false,
+                        'IsPrivate' => false,
+                        'UUID' => (string) Str::uuid(),
+                        'UmuhanziID' => $umuhanziId,
+                        'OrchestreID' => $orchestreId,
+                        'ItoreroID' => $itoreroId,
+                        'UserID' => $userId,
+                        'ProfilePicture' => ($index === 0 && $imageFileName) ? 'Pictures/' . $imageFileName : '',
+                        'IndirimboUrl' => 'Audios/' . $fileName,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                    
+                    $uploadedSongs[] = $songName;
                 } catch (\Exception $e) {
                     $errorMsg = 'Failed to upload ' . $audioFile->getClientOriginalName() . ': ' . $e->getMessage();
                     $errors[] = $errorMsg;
-                    
-                    \Log::error('Admin song upload: Exception occurred while saving song', [
-                        'index' => $index,
-                        'file_name' => $audioFile->getClientOriginalName(),
-                        'error_message' => $e->getMessage(),
-                        'error_code' => $e->getCode(),
-                        'error_file' => $e->getFile(),
-                        'error_line' => $e->getLine(),
-                    ]);
+                    // Only log actual errors, not validation issues
+                    if (config('app.debug')) {
+                        \Log::error('Admin song upload: Exception occurred', [
+                            'file_name' => $audioFile->getClientOriginalName(),
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+            }
+            
+            // Bulk insert all songs at once (much faster than individual saves)
+            if (!empty($songsToInsert)) {
+                try {
+                    \DB::table('Indirimbo')->insert($songsToInsert);
+                } catch (\Exception $e) {
+                    // Fallback to individual saves if bulk insert fails
+                    foreach ($songsToInsert as $songData) {
+                        try {
+                            $song = new Song();
+                            $song->fill($songData);
+                            $song->save();
+                        } catch (\Exception $e2) {
+                            $errors[] = 'Failed to save song: ' . ($songData['IndirimboName'] ?? 'Unknown');
+                        }
+                    }
                 }
             }
         }
