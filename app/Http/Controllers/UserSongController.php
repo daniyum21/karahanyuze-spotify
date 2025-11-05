@@ -151,12 +151,22 @@ class UserSongController extends Controller
     public function createForArtist($uuid)
     {
         $artist = Artist::where('UUID', $uuid)->firstOrFail();
+        
+        // Get existing songs for this artist (only with audio URLs)
+        $songs = Song::where('UmuhanziID', $artist->UmuhanziID)
+            ->whereNotNull('IndirimboUrl')
+            ->where('IndirimboUrl', '!=', '')
+            ->with(['status', 'user', 'artist'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+        
         return view('user.songs.create-for-entity', [
             'entity' => $artist,
             'entityType' => 'artist',
             'entityName' => $artist->StageName,
             'entityId' => $artist->UmuhanziID,
-            'entityIdField' => 'UmuhanziID'
+            'entityIdField' => 'UmuhanziID',
+            'songs' => $songs
         ]);
     }
 
@@ -177,12 +187,22 @@ class UserSongController extends Controller
     public function createForOrchestra($uuid)
     {
         $orchestra = Orchestra::where('UUID', $uuid)->firstOrFail();
+        
+        // Get existing songs for this orchestra (only with audio URLs)
+        $songs = Song::where('OrchestreID', $orchestra->OrchestreID)
+            ->whereNotNull('IndirimboUrl')
+            ->where('IndirimboUrl', '!=', '')
+            ->with(['status', 'user', 'orchestra'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+        
         return view('user.songs.create-for-entity', [
             'entity' => $orchestra,
             'entityType' => 'orchestra',
             'entityName' => $orchestra->OrchestreName,
             'entityId' => $orchestra->OrchestreID,
-            'entityIdField' => 'OrchestreID'
+            'entityIdField' => 'OrchestreID',
+            'songs' => $songs
         ]);
     }
 
@@ -203,12 +223,22 @@ class UserSongController extends Controller
     public function createForItorero($uuid)
     {
         $itorero = Itorero::where('UUID', $uuid)->firstOrFail();
+        
+        // Get existing songs for this itorero (only with audio URLs)
+        $songs = Song::where('ItoreroID', $itorero->ItoreroID)
+            ->whereNotNull('IndirimboUrl')
+            ->where('IndirimboUrl', '!=', '')
+            ->with(['status', 'user', 'itorero'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+        
         return view('user.songs.create-for-entity', [
             'entity' => $itorero,
             'entityType' => 'itorero',
             'entityName' => $itorero->ItoreroName,
             'entityId' => $itorero->ItoreroID,
-            'entityIdField' => 'ItoreroID'
+            'entityIdField' => 'ItoreroID',
+            'songs' => $songs
         ]);
     }
 
@@ -394,9 +424,25 @@ class UserSongController extends Controller
                     $song->Lyrics = '';
                     $song->StatusID = $pendingStatus->StatusID;
                     $song->IsFeatured = false;
+                    $song->IsPrivate = false;
                     $song->UUID = (string) Str::uuid();
                     $song->UserID = Auth::id() ?? 0;
-                    $song->$entityIdField = $entityId;
+                    $song->ProfilePicture = ''; // Initialize to empty string
+                    
+                    // Set entity fields based on entity type
+                    if ($entityIdField === 'UmuhanziID') {
+                        $song->UmuhanziID = $entityId;
+                        $song->OrchestreID = null;
+                        $song->ItoreroID = null;
+                    } elseif ($entityIdField === 'OrchestreID') {
+                        $song->OrchestreID = $entityId;
+                        $song->UmuhanziID = null;
+                        $song->ItoreroID = null;
+                    } elseif ($entityIdField === 'ItoreroID') {
+                        $song->ItoreroID = $entityId;
+                        $song->UmuhanziID = null;
+                        $song->OrchestreID = null;
+                    }
 
                     // Handle audio file upload
                     $extension = $audioFile->getClientOriginalExtension();
