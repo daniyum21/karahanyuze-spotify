@@ -5,9 +5,24 @@
 <div id="comment-{{ $comment->CommentID }}" class="bg-zinc-800 rounded-lg p-6 {{ $depth > 0 ? 'ml-8 border-l-2 border-zinc-700' : '' }}">
     <div class="flex items-start gap-4">
         <div class="flex-shrink-0">
+            @php
+                $userProfilePicture = $comment->user->ProfilePicture ?? null;
+            @endphp
+            @if($userProfilePicture && !empty($userProfilePicture))
+            <img 
+                src="{{ \App\Helpers\ImageHelper::getImageUrl($userProfilePicture) }}" 
+                alt="{{ $comment->user->PublicName ?? $comment->user->FirstName . ' ' . $comment->user->LastName }}"
+                class="w-10 h-10 rounded-full object-cover border-2 border-green-500/50"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+            >
+            <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white font-semibold hidden">
+                {{ strtoupper(substr($comment->user->PublicName ?? $comment->user->FirstName, 0, 1)) }}
+            </div>
+            @else
             <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white font-semibold">
                 {{ strtoupper(substr($comment->user->PublicName ?? $comment->user->FirstName, 0, 1)) }}
             </div>
+            @endif
         </div>
         <div class="flex-1">
             <div class="flex items-center gap-3 mb-2">
@@ -23,7 +38,8 @@
             <div class="flex items-center gap-4">
                 @auth
                 @php
-                    $thread = $comment->thread ?? null;
+                    // Get thread from passed variable or from comment relationship
+                    $thread = $thread ?? $comment->thread ?? null;
                 @endphp
                 @if($thread && !$thread->is_locked && $depth < $maxDepth)
                 <button onclick="toggleReplyForm({{ $comment->CommentID }})" class="text-green-500 hover:text-green-400 text-sm font-medium transition-colors flex items-center gap-2">
@@ -58,6 +74,31 @@
             @auth
             @if($thread && !$thread->is_locked && $depth < $maxDepth)
             <div id="reply-form-{{ $comment->CommentID }}" class="hidden mt-4 pt-4 border-t border-zinc-700">
+                <div class="flex items-start gap-3 mb-4">
+                    @php
+                        $currentUserProfilePicture = Auth::user()->ProfilePicture ?? null;
+                    @endphp
+                    @if($currentUserProfilePicture && !empty($currentUserProfilePicture))
+                    <img 
+                        src="{{ \App\Helpers\ImageHelper::getImageUrl($currentUserProfilePicture) }}" 
+                        alt="{{ Auth::user()->PublicName ?? Auth::user()->FirstName . ' ' . Auth::user()->LastName }}"
+                        class="w-8 h-8 rounded-full object-cover border border-green-500/50 flex-shrink-0"
+                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                    >
+                    <div class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white font-semibold text-xs hidden">
+                        {{ strtoupper(substr(Auth::user()->PublicName ?? Auth::user()->FirstName, 0, 1)) }}
+                    </div>
+                    @else
+                    <div class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+                        {{ strtoupper(substr(Auth::user()->PublicName ?? Auth::user()->FirstName, 0, 1)) }}
+                    </div>
+                    @endif
+                    <div class="flex-1">
+                        <p class="text-sm text-zinc-400 mb-2">
+                            Replying to <span class="text-white font-medium">{{ $comment->user->PublicName ?? $comment->user->FirstName . ' ' . $comment->user->LastName }}</span>
+                        </p>
+                    </div>
+                </div>
                 <form action="{{ route('forum.comments.store', $thread->slug) }}" method="POST">
                     @csrf
                     <input type="hidden" name="parent_id" value="{{ $comment->CommentID }}">
@@ -92,7 +133,7 @@
                             $reply->load('replies.user');
                         }
                     @endphp
-                    @include('forum.partials.comment', ['comment' => $reply, 'depth' => $depth + 1])
+                    @include('forum.partials.comment', ['comment' => $reply, 'thread' => $thread, 'depth' => $depth + 1])
                 @endforeach
             </div>
             @endif

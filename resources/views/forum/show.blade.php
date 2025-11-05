@@ -127,7 +127,7 @@
             @if($comments->count() > 0)
             <div class="space-y-6">
                 @foreach($comments as $comment)
-                    @include('forum.partials.comment', ['comment' => $comment, 'depth' => 0])
+                    @include('forum.partials.comment', ['comment' => $comment, 'thread' => $thread, 'depth' => 0])
                 @endforeach
             </div>
             @else
