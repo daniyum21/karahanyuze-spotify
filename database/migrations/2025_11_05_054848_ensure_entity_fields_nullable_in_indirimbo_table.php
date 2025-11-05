@@ -4,6 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 return new class extends Migration
 {
@@ -14,16 +15,26 @@ return new class extends Migration
     {
         // Ensure UmuhanziID, OrchestreID, and ItoreroID are nullable in Indirimbo table
         // Use raw SQL to modify columns to nullable since the table already exists
-        if (Schema::hasTable('Indirimbo')) {
-            if (Schema::hasColumn('Indirimbo', 'UmuhanziID')) {
-                DB::statement('ALTER TABLE `Indirimbo` MODIFY `UmuhanziID` INT UNSIGNED NULL');
-            }
-            if (Schema::hasColumn('Indirimbo', 'OrchestreID')) {
-                DB::statement('ALTER TABLE `Indirimbo` MODIFY `OrchestreID` INT UNSIGNED NULL');
-            }
-            if (Schema::hasColumn('Indirimbo', 'ItoreroID')) {
-                DB::statement('ALTER TABLE `Indirimbo` MODIFY `ItoreroID` INT UNSIGNED NULL');
-            }
+        // Try-catch each statement to handle cases where columns might already be nullable
+        try {
+            DB::statement('ALTER TABLE `Indirimbo` MODIFY `UmuhanziID` INT UNSIGNED NULL');
+        } catch (\Exception $e) {
+            // Column might already be nullable or doesn't exist - that's okay
+            Log::info('Migration: UmuhanziID already nullable or error: ' . $e->getMessage());
+        }
+        
+        try {
+            DB::statement('ALTER TABLE `Indirimbo` MODIFY `OrchestreID` INT UNSIGNED NULL');
+        } catch (\Exception $e) {
+            // Column might already be nullable or doesn't exist - that's okay
+            Log::info('Migration: OrchestreID already nullable or error: ' . $e->getMessage());
+        }
+        
+        try {
+            DB::statement('ALTER TABLE `Indirimbo` MODIFY `ItoreroID` INT UNSIGNED NULL');
+        } catch (\Exception $e) {
+            // Column might already be nullable or doesn't exist - that's okay
+            Log::info('Migration: ItoreroID already nullable or error: ' . $e->getMessage());
         }
     }
 

@@ -163,10 +163,7 @@
                     @if($song->IndirimboUrl)
                     <div class="bg-zinc-800 p-4 rounded-lg">
                         <p class="text-sm text-zinc-400 mb-2">Current Audio File:</p>
-                        <audio controls class="w-full">
-                            <source src="{{ route('indirimbo.audio', $song->IndirimboID) }}" type="audio/mpeg">
-                            Your browser does not support the audio element.
-                        </audio>
+                        <p class="text-xs text-zinc-500 mb-3">The song will play in the music player at the bottom of the page</p>
                     </div>
                     @endif
 
@@ -324,6 +321,74 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }
+    
+    // Initialize music player for this song
+    document.addEventListener('DOMContentLoaded', function() {
+        const audioUrl = '{{ $song->IndirimboUrl ? route("indirimbo.audio", $song->IndirimboID) : "" }}';
+        const musicPlayer = document.getElementById('music-player');
+        
+        // Show the music player immediately
+        if (musicPlayer) {
+            musicPlayer.classList.remove('hidden');
+        }
+        
+        // Update bottom player with song info
+        updateBottomPlayer();
+        
+        // Wait a bit for the player to be initialized, then auto-play
+        setTimeout(function() {
+            const player = document.getElementById('bottom-audio-player');
+            const playerImage = document.getElementById('player-image');
+            const playerTitle = document.getElementById('player-title');
+            const playerArtist = document.getElementById('player-artist');
+            
+            if (player && audioUrl) {
+                // Set audio source
+                player.src = audioUrl;
+                player.currentTime = 0;
+                player.load();
+                
+                // Update player info
+                if (playerImage) {
+                    playerImage.src = '{{ $song->ProfilePicture ? \App\Helpers\ImageHelper::getImageUrl($song->ProfilePicture) : asset("images/default-song.png") }}';
+                }
+                if (playerTitle) {
+                    playerTitle.textContent = '{{ $song->IndirimboName }}';
+                }
+                if (playerArtist) {
+                    @if($song->artist)
+                        playerArtist.textContent = '{{ $song->artist->StageName }}';
+                    @elseif($song->orchestra)
+                        playerArtist.textContent = '{{ $song->orchestra->OrchestreName }}';
+                    @elseif($song->itorero)
+                        playerArtist.textContent = '{{ $song->itorero->ItoreroName }}';
+                    @else
+                        playerArtist.textContent = 'Unknown';
+                    @endif
+                }
+                
+                // Re-initialize player events to ensure they're attached
+                if (typeof window.initializePlayerEvents === 'function') {
+                    window.initializePlayerEvents();
+                    // Get fresh reference after re-initialization
+                    const freshPlayer = document.getElementById('bottom-audio-player');
+                    if (freshPlayer) {
+                        freshPlayer.src = audioUrl;
+                        freshPlayer.currentTime = 0;
+                        freshPlayer.load();
+                        
+                        // Wait for audio to be ready before playing
+                        freshPlayer.addEventListener('canplay', function playWhenReady() {
+                            freshPlayer.play().catch(function(error) {
+                                console.log('Auto-play prevented (browser policy):', error);
+                            });
+                            freshPlayer.removeEventListener('canplay', playWhenReady);
+                        }, { once: true });
+                    }
+                }
+            }
+        }, 100);
+    });
 });
 </script>
 @endsection
