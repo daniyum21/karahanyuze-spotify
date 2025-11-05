@@ -81,6 +81,192 @@
             </div>
         </div>
 
+        <!-- My Content Section -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-bold text-white">My Content</h2>
+                <a href="{{ route('submissions.index') }}" class="text-sm text-zinc-400 hover:text-green-400 transition-colors">
+                    View All →
+                </a>
+            </div>
+
+            <!-- Tabs for different content types -->
+            <div class="mb-6 flex flex-wrap gap-4 border-b border-zinc-800">
+                <button onclick="showMyContent('songs')" class="my-content-tab px-4 py-2 text-white border-b-2 border-green-500 font-medium" data-tab="songs">
+                    My Music ({{ $mySongs->count() }})
+                </button>
+                <button onclick="showMyContent('artists')" class="my-content-tab px-4 py-2 text-zinc-400 hover:text-white border-b-2 border-transparent font-medium" data-tab="artists">
+                    My Artists ({{ $myArtists->count() }})
+                </button>
+                <button onclick="showMyContent('orchestras')" class="my-content-tab px-4 py-2 text-zinc-400 hover:text-white border-b-2 border-transparent font-medium" data-tab="orchestras">
+                    My Orchestras ({{ $myOrchestras->count() }})
+                </button>
+                <button onclick="showMyContent('itoreros')" class="my-content-tab px-4 py-2 text-zinc-400 hover:text-white border-b-2 border-transparent font-medium" data-tab="itoreros">
+                    My Itoreros ({{ $myItoreros->count() }})
+                </button>
+            </div>
+
+            <!-- My Songs -->
+            <div id="my-content-songs" class="my-content-section">
+                @if($mySongs->count() > 0)
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    @foreach($mySongs as $song)
+                    <div class="bg-zinc-900 rounded-lg overflow-hidden hover:bg-zinc-800 transition-colors">
+                        <a href="{{ $song->isApproved() ? route('indirimbo.show', [$song->slug, $song->UUID]) : route('user.songs.edit', $song->UUID) }}" class="block">
+                            <div class="aspect-square relative">
+                                @if($song->ProfilePicture)
+                                <img 
+                                    src="{{ \App\Helpers\ImageHelper::getImageUrl($song->ProfilePicture) }}" 
+                                    alt="{{ $song->IndirimboName }}"
+                                    class="w-full h-full object-cover"
+                                >
+                                @else
+                                <div class="w-full h-full bg-zinc-800 flex items-center justify-center">
+                                    <svg class="w-16 h-16 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                                    </svg>
+                                </div>
+                                @endif
+                                <div class="absolute top-2 right-2">
+                                    @if($song->isApproved())
+                                    <span class="px-2 py-1 bg-green-500/80 text-white text-xs font-semibold rounded">Approved</span>
+                                    @elseif($song->isDeclined())
+                                    <span class="px-2 py-1 bg-red-500/80 text-white text-xs font-semibold rounded">Declined</span>
+                                    @else
+                                    <span class="px-2 py-1 bg-yellow-500/80 text-white text-xs font-semibold rounded">Pending</span>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="p-4">
+                                <h3 class="text-white font-semibold mb-1 line-clamp-2">{{ $song->IndirimboName }}</h3>
+                                <p class="text-zinc-400 text-sm">
+                                    @if($song->artist)
+                                        {{ $song->artist->StageName }}
+                                    @elseif($song->orchestra)
+                                        {{ $song->orchestra->OrchestreName }}
+                                    @elseif($song->itorero)
+                                        {{ $song->itorero->ItoreroName }}
+                                    @endif
+                                </p>
+                                <p class="text-xs text-zinc-500 mt-2">Submitted {{ $song->created_at ? $song->created_at->diffForHumans() : 'Recently' }}</p>
+                            </div>
+                        </a>
+                    </div>
+                    @endforeach
+                </div>
+                @else
+                <div class="text-center py-12 bg-zinc-900 rounded-lg">
+                    <svg class="w-16 h-16 text-zinc-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                    </svg>
+                    <p class="text-zinc-400 text-lg mb-4">No songs submitted yet</p>
+                    <a href="{{ route('user.songs.create') }}" class="inline-block bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
+                        Upload Your First Song
+                    </a>
+                </div>
+                @endif
+            </div>
+
+            <!-- My Artists -->
+            <div id="my-content-artists" class="my-content-section hidden">
+                @if($myArtists->count() > 0)
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    @foreach($myArtists as $artist)
+                    <div class="bg-zinc-900 rounded-lg overflow-hidden hover:bg-zinc-800 transition-colors">
+                        <a href="{{ route('artists.show', $artist->slug) }}" class="block">
+                            <div class="aspect-square relative">
+                                <img 
+                                    src="{{ \App\Helpers\ImageHelper::getImageUrl($artist->ProfilePicture) }}" 
+                                    alt="{{ $artist->StageName }}"
+                                    class="w-full h-full object-cover"
+                                >
+                            </div>
+                            <div class="p-4">
+                                <h3 class="text-white font-semibold mb-1">{{ $artist->StageName }}</h3>
+                                <p class="text-zinc-400 text-sm">{{ $artist->songs->count() }} songs</p>
+                                <p class="text-xs text-zinc-500 mt-2">Created {{ $artist->created_at ? $artist->created_at->diffForHumans() : 'Recently' }}</p>
+                            </div>
+                        </a>
+                    </div>
+                    @endforeach
+                </div>
+                @else
+                <div class="text-center py-12 bg-zinc-900 rounded-lg">
+                    <p class="text-zinc-400 text-lg mb-4">No artists created yet</p>
+                    <a href="{{ route('user.artists.create') }}" class="inline-block bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
+                        Create Your First Artist
+                    </a>
+                </div>
+                @endif
+            </div>
+
+            <!-- My Orchestras -->
+            <div id="my-content-orchestras" class="my-content-section hidden">
+                @if($myOrchestras->count() > 0)
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    @foreach($myOrchestras as $orchestra)
+                    <div class="bg-zinc-900 rounded-lg overflow-hidden hover:bg-zinc-800 transition-colors">
+                        <a href="{{ route('orchestre.show', $orchestra->slug) }}" class="block">
+                            <div class="aspect-square relative">
+                                <img 
+                                    src="{{ \App\Helpers\ImageHelper::getImageUrl($orchestra->ProfilePicture) }}" 
+                                    alt="{{ $orchestra->OrchestreName }}"
+                                    class="w-full h-full object-cover"
+                                >
+                            </div>
+                            <div class="p-4">
+                                <h3 class="text-white font-semibold mb-1">{{ $orchestra->OrchestreName }}</h3>
+                                <p class="text-zinc-400 text-sm">{{ $orchestra->songs->count() }} songs</p>
+                                <p class="text-xs text-zinc-500 mt-2">Created {{ $orchestra->created_at ? $orchestra->created_at->diffForHumans() : 'Recently' }}</p>
+                            </div>
+                        </a>
+                    </div>
+                    @endforeach
+                </div>
+                @else
+                <div class="text-center py-12 bg-zinc-900 rounded-lg">
+                    <p class="text-zinc-400 text-lg mb-4">No orchestras created yet</p>
+                    <a href="{{ route('user.orchestras.create') }}" class="inline-block bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
+                        Create Your First Orchestra
+                    </a>
+                </div>
+                @endif
+            </div>
+
+            <!-- My Itoreros -->
+            <div id="my-content-itoreros" class="my-content-section hidden">
+                @if($myItoreros->count() > 0)
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    @foreach($myItoreros as $itorero)
+                    <div class="bg-zinc-900 rounded-lg overflow-hidden hover:bg-zinc-800 transition-colors">
+                        <a href="{{ route('itorero.show', $itorero->slug) }}" class="block">
+                            <div class="aspect-square relative">
+                                <img 
+                                    src="{{ \App\Helpers\ImageHelper::getImageUrl($itorero->ProfilePicture) }}" 
+                                    alt="{{ $itorero->ItoreroName }}"
+                                    class="w-full h-full object-cover"
+                                >
+                            </div>
+                            <div class="p-4">
+                                <h3 class="text-white font-semibold mb-1">{{ $itorero->ItoreroName }}</h3>
+                                <p class="text-zinc-400 text-sm">{{ $itorero->songs->count() }} songs</p>
+                                <p class="text-xs text-zinc-500 mt-2">Created {{ $itorero->created_at ? $itorero->created_at->diffForHumans() : 'Recently' }}</p>
+                            </div>
+                        </a>
+                    </div>
+                    @endforeach
+                </div>
+                @else
+                <div class="text-center py-12 bg-zinc-900 rounded-lg">
+                    <p class="text-zinc-400 text-lg mb-4">No itoreros created yet</p>
+                    <a href="{{ route('user.itoreros.create') }}" class="inline-block bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
+                        Create Your First Itorero
+                    </a>
+                </div>
+                @endif
+            </div>
+        </div>
+
         <!-- Favorites Section -->
         <div class="mb-6">
             <h2 class="text-2xl font-bold text-white mb-4">Your Favorites</h2>
@@ -305,6 +491,31 @@
 </div>
 
 <script>
+function showMyContent(type) {
+    // Hide all sections
+    document.querySelectorAll('.my-content-section').forEach(section => {
+        section.classList.add('hidden');
+    });
+    
+    // Show selected section
+    const section = document.getElementById('my-content-' + type);
+    if (section) {
+        section.classList.remove('hidden');
+    }
+    
+    // Update tab buttons
+    document.querySelectorAll('.my-content-tab').forEach(button => {
+        const tab = button.getAttribute('data-tab');
+        if (tab === type) {
+            button.classList.remove('text-zinc-400', 'border-transparent');
+            button.classList.add('text-white', 'border-green-500');
+        } else {
+            button.classList.remove('text-white', 'border-green-500');
+            button.classList.add('text-zinc-400', 'border-transparent');
+        }
+    });
+}
+
 function showFavorites(type) {
     // Hide all sections
     document.querySelectorAll('.favorites-section').forEach(section => {

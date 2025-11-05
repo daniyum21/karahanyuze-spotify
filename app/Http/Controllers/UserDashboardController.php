@@ -8,6 +8,7 @@ use App\Models\Artist;
 use App\Models\Orchestra;
 use App\Models\Itorero;
 use App\Models\Playlist;
+use App\Models\SongStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -82,7 +83,69 @@ class UserDashboardController extends Controller
             ->orderBy('Favorites.created_at', 'desc')
             ->get();
 
-        return view('user.dashboard', compact('favoriteSongs', 'favoriteArtists', 'favoriteOrchestras', 'favoriteItoreros', 'favoritePlaylists'));
+        // Get user's submitted content
+        // Songs
+        $mySongs = Song::where('UserID', $user->UserID)
+            ->with(['status', 'artist', 'orchestra', 'itorero'])
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        // Artists (through songs created by user)
+        $artistIds = Song::where('UserID', $user->UserID)
+            ->whereNotNull('UmuhanziID')
+            ->distinct()
+            ->pluck('UmuhanziID');
+        
+        $myArtists = Artist::whereIn('UmuhanziID', $artistIds)
+            ->with('songs')
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        // Orchestras (through songs created by user)
+        $orchestraIds = Song::where('UserID', $user->UserID)
+            ->whereNotNull('OrchestreID')
+            ->distinct()
+            ->pluck('OrchestreID');
+        
+        $myOrchestras = Orchestra::whereIn('OrchestreID', $orchestraIds)
+            ->with('songs')
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        // Itoreros (through songs created by user)
+        $itoreroIds = Song::where('UserID', $user->UserID)
+            ->whereNotNull('ItoreroID')
+            ->distinct()
+            ->pluck('ItoreroID');
+        
+        $myItoreros = Itorero::whereIn('ItoreroID', $itoreroIds)
+            ->with('songs')
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        // Get approved status for checking
+        $approvedStatus = SongStatus::where('StatusName', 'Approved')
+            ->orWhere('StatusName', 'approved')
+            ->orWhere('StatusName', 'Public')
+            ->orWhere('StatusName', 'public')
+            ->first();
+
+        return view('user.dashboard', compact(
+            'favoriteSongs', 
+            'favoriteArtists', 
+            'favoriteOrchestras', 
+            'favoriteItoreros', 
+            'favoritePlaylists',
+            'mySongs',
+            'myArtists',
+            'myOrchestras',
+            'myItoreros',
+            'approvedStatus'
+        ));
     }
 
     /**

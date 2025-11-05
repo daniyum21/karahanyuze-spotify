@@ -46,19 +46,8 @@
                         <p class="text-xl font-semibold text-white">{{ $entityName }}</p>
                     </div>
 
-                    <!-- Song Name (Optional - only used if single file upload) -->
-                    <div>
-                        <label for="IndirimboName" class="block text-sm font-medium text-white mb-2">Song Name (Optional)</label>
-                        <p class="text-xs text-zinc-400 mb-2">Leave empty for bulk upload - song names will be extracted from filenames</p>
-                        <input 
-                            type="text" 
-                            id="IndirimboName" 
-                            name="IndirimboName" 
-                            value="{{ old('IndirimboName') }}"
-                            class="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                            placeholder="Enter song name (optional for bulk upload)"
-                        >
-                    </div>
+                    <!-- Song Names Container (for multiple files) -->
+                    <div id="song-names-container"></div>
 
                     <!-- Description -->
                     <div>
@@ -134,6 +123,7 @@
                     <div class="flex gap-4 pt-4">
                         <button 
                             type="submit" 
+                            id="submit-btn"
                             class="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
                         >
                             Upload Songs
@@ -326,36 +316,73 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             audioInput.files = dataTransfer.files;
             
+            // Update hidden inputs for song names
+            const namesContainer = document.getElementById('song-names-container');
+            if (namesContainer) {
+                namesContainer.innerHTML = '';
+            }
+            
             if (selectedFiles.length > 0) {
                 const fileCount = document.createElement('div');
-                fileCount.className = 'text-sm text-white font-medium mb-2';
-                fileCount.textContent = `Selected ${selectedFiles.length} file(s):`;
+                fileCount.className = 'text-sm text-white font-medium mb-3';
+                fileCount.textContent = `Selected ${selectedFiles.length} file(s). Edit song names below:`;
                 fileList.appendChild(fileCount);
                 
                 selectedFiles.forEach((file, index) => {
+                    // Extract default song name from filename
+                    const defaultName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+                    const defaultNameFormatted = defaultName.split(' ').map(word => 
+                        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                    ).join(' ');
+                    
+                    // Store default name if not already set
+                    if (!file.songName) {
+                        file.songName = defaultNameFormatted;
+                    }
+                    
                     const fileItem = document.createElement('div');
-                    fileItem.className = 'flex items-start gap-3 bg-zinc-800 rounded-lg p-3';
+                    fileItem.className = 'bg-zinc-800 rounded-lg p-4 mb-3';
                     fileItem.setAttribute('data-file-index', index);
                     fileItem.innerHTML = `
-                        <div class="flex-1 min-w-0">
-                            <div class="text-sm text-white break-words">${escapeHtml(file.name)}</div>
-                            <div class="text-xs text-zinc-400 mt-1">${(file.size / 1024 / 1024).toFixed(2)} MB</div>
-                            <div class="text-xs text-zinc-400 mt-1 break-words">
-                                Song name: ${escapeHtml(file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '))}
+                        <div class="flex items-start gap-4">
+                            <div class="flex-1 min-w-0">
+                                <div class="text-sm text-zinc-400 mb-2 break-words">${escapeHtml(file.name)}</div>
+                                <div class="text-xs text-zinc-500 mb-3">${(file.size / 1024 / 1024).toFixed(2)} MB</div>
+                                <div>
+                                    <label class="block text-xs text-zinc-400 mb-1">Song Name</label>
+                                    <input 
+                                        type="text" 
+                                        class="song-name-input w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                                        value="${escapeHtml(file.songName)}"
+                                        data-file-index="${index}"
+                                        placeholder="Enter song name"
+                                    >
+                                </div>
                             </div>
+                            <button 
+                                type="button" 
+                                class="remove-file-btn flex-shrink-0 text-red-400 hover:text-red-300 transition-colors p-2 mt-1"
+                                data-file-index="${index}"
+                                aria-label="Remove file"
+                            >
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
                         </div>
-                        <button 
-                            type="button" 
-                            class="remove-file-btn flex-shrink-0 text-red-400 hover:text-red-300 transition-colors p-1"
-                            data-file-index="${index}"
-                            aria-label="Remove file"
-                        >
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
                     `;
                     fileList.appendChild(fileItem);
+                    
+                    // Add event listener to song name input
+                    const nameInput = fileItem.querySelector('.song-name-input');
+                    nameInput.addEventListener('input', function() {
+                        const fileIndex = parseInt(this.getAttribute('data-file-index'));
+                        if (selectedFiles[fileIndex]) {
+                            selectedFiles[fileIndex].songName = this.value;
+                            // Update hidden input
+                            updateHiddenInputs();
+                        }
+                    });
                 });
                 
                 // Add event listeners to remove buttons
@@ -367,13 +394,65 @@ document.addEventListener('DOMContentLoaded', function() {
                         updateFileList();
                     });
                 });
+                
+                // Update hidden inputs for song names
+                updateHiddenInputs();
             }
+        }
+        
+        function updateHiddenInputs() {
+            const namesContainer = document.getElementById('song-names-container');
+            if (!namesContainer) return;
+            
+            namesContainer.innerHTML = '';
+            
+            selectedFiles.forEach((file, index) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = `song_names[${index}]`;
+                input.value = file.songName || '';
+                namesContainer.appendChild(input);
+            });
         }
         
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+        
+        // Update hidden inputs before form submission
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                // Ensure files are re-attached
+                try {
+                    const dataTransfer = new DataTransfer();
+                    selectedFiles.forEach(file => {
+                        try {
+                            dataTransfer.items.add(file);
+                        } catch (err) {
+                            console.error('Error adding file to DataTransfer during submit:', err, file);
+                        }
+                    });
+                    audioInput.files = dataTransfer.files;
+                    
+                    if (audioInput.files.length === 0) {
+                        e.preventDefault();
+                        alert('Error: No files selected. Please select files again.');
+                        return false;
+                    }
+                    console.log('Submitting form with', audioInput.files.length, 'files');
+                } catch (err) {
+                    console.error('Error preparing files for upload:', err);
+                    e.preventDefault();
+                    alert('Error preparing files for upload. Please try again.');
+                    return false;
+                }
+                
+                // Update hidden inputs for song names
+                updateHiddenInputs();
+            });
         }
     }
 });
