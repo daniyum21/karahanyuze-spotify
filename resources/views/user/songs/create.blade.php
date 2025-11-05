@@ -130,7 +130,13 @@
                                 @endif
                             </div>
                         </div>
-                        <p class="text-xs text-zinc-500 mt-2">Select one owner (artist, orchestra, or itorero). Don't see the artist you need? <a href="{{ route('user.artists.create') }}" class="text-green-500 hover:text-green-400 underline">Create a new artist</a> first.</p>
+                        <p class="text-xs text-zinc-500 mt-2">
+                            Select one owner (artist, orchestra, or itorero). 
+                            Don't see what you need? 
+                            <a href="{{ route('user.artists.create') }}" class="text-green-500 hover:text-green-400 underline">Create a new artist</a>, 
+                            <a href="{{ route('user.orchestras.create') }}" class="text-green-500 hover:text-green-400 underline">create an orchestra</a>, or 
+                            <a href="{{ route('user.itoreros.create') }}" class="text-green-500 hover:text-green-400 underline">create an itorero</a> first.
+                        </p>
                     </div>
 
                     <!-- Audio File -->

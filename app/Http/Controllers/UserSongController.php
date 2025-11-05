@@ -84,8 +84,10 @@ class UserSongController extends Controller
         $song->Lyrics = $validated['Lyrics'] ?? '';
         $song->StatusID = $pendingStatus->StatusID; // Set to pending for approval
         $song->IsFeatured = false; // Regular users can't set featured
+        $song->IsPrivate = false; // Initialize to false
         $song->UUID = (string) Str::uuid();
         $song->UserID = Auth::id() ?? 0; // Set user who created it
+        $song->ProfilePicture = ''; // Initialize to empty string
 
         // Set owner (artist, orchestra, or itorero)
         if (!empty($validated['UmuhanziID'])) {
@@ -117,6 +119,10 @@ class UserSongController extends Controller
             // Store relative path (without storage/app prefix)
             $song->ProfilePicture = 'Pictures/' . $fileName;
         }
+        
+        // Ensure all required fields are set before save
+        $song->ProfilePicture = $song->ProfilePicture ?? '';
+        $song->IsPrivate = $song->IsPrivate ?? false;
 
         $song->save();
 
@@ -457,8 +463,15 @@ class UserSongController extends Controller
                         $imageFileName = Str::random(100) . '_' . time() . '.' . $imageExtension;
                         $imagePath = $imageFile->storeAs('Pictures', $imageFileName, 'local');
                         $song->ProfilePicture = 'Pictures/' . $imageFileName;
+                    } else {
+                        // Ensure ProfilePicture is always set to empty string if no image
+                        $song->ProfilePicture = '';
                     }
 
+                    // Ensure all required fields are set before save
+                    $song->ProfilePicture = $song->ProfilePicture ?? '';
+                    $song->IsPrivate = $song->IsPrivate ?? false;
+                    
                     $song->save();
                     $uploadedSongs[] = $song->IndirimboName;
                 } catch (\Exception $e) {
