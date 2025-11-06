@@ -195,9 +195,8 @@ jobs:
             # We only redirect karahanyuze.com to iwacu, other domains still use root
             echo "✅ Keeping old index.php in public_html for other domains"
             
-            # Update .htaccess in public_html to route karahanyuze.com to iwacu
-            echo "🔧 Updating .htaccess in public_html to route to iwacu..."
-            cd ~/public_html
+            # Update .htaccess in public_html to point to iwacu/index.php
+            echo "🔧 Updating .htaccess in public_html to point to iwacu..."
             if [ -f ".htaccess" ]; then
               # Backup original
               cp .htaccess .htaccess.backup-$(date +%Y%m%d-%H%M%S) 2>/dev/null || cp .htaccess .htaccess.backup
@@ -208,34 +207,9 @@ jobs:
                 cp iwacu/.htaccess .htaccess
                 echo "✅ .htaccess updated from iwacu"
               else
-                # Fallback: update manually - replace the last RewriteRule for karahanyuze.com
+                # Fallback: update manually
                 echo "📝 Updating .htaccess manually..."
-                # Replace the old rule that sends to index.php with rules that send to iwacu
-                sed -i '/# Send Requests To Front Controller/,/RewriteRule ^ index.php \[L\]/ {
-                  /RewriteRule ^ index.php \[L\]/ {
-                    i\
-    # For karahanyuze.com - redirect to iwacu (new Spotify design)\
-    RewriteCond %{HTTP_HOST} ^(www\.)?karahanyuze\.com$ [NC]\
-    RewriteCond %{REQUEST_URI} !^/iwacu/\
-    RewriteCond %{REQUEST_FILENAME} !-d\
-    RewriteCond %{REQUEST_FILENAME} !-f\
-    RewriteRule ^(.*)$ iwacu/$1 [L]\
-    \
-    # Handle requests that already go to iwacu\
-    RewriteCond %{HTTP_HOST} ^(www\.)?karahanyuze\.com$ [NC]\
-    RewriteCond %{REQUEST_URI} ^/iwacu/\
-    RewriteCond %{REQUEST_FILENAME} !-d\
-    RewriteCond %{REQUEST_FILENAME} !-f\
-    RewriteRule ^iwacu/(.*)$ iwacu/index.php [L]\
-    \
-    # For other domains - serve from root (old code)
-                    d
-                  }
-                }' .htaccess || true
-                
-                # Alternative: simpler replacement
-                sed -i "s|RewriteRule ^ index.php \[L\]|RewriteCond %{REQUEST_URI} !^/iwacu/\nRewriteRule ^(.*)$ iwacu/\$1 [L]\n\n# Handle iwacu requests\nRewriteCond %{HTTP_HOST} ^(www\\.)?karahanyuze\\.com$ [NC]\nRewriteCond %{REQUEST_URI} ^/iwacu/\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteRule ^iwacu/(.*)$ iwacu/index.php [L]\n\n# For other domains\nRewriteCond %{HTTP_HOST} !^(www\\.)?karahanyuze\\.com$ [NC]\nRewriteRule ^ index.php [L]|g" .htaccess || true
-                
+                sed -i "s|RewriteRule ^ index.php \[L\]|RewriteRule ^ iwacu/index.php [L]|g" .htaccess || true
                 echo "✅ .htaccess updated manually"
               fi
             else
@@ -522,9 +496,8 @@ jobs:
             # We only redirect karahanyuze.com to iwacu, other domains still use root
             echo "✅ Keeping old index.php in public_html for other domains"
             
-            # Update .htaccess in public_html to route karahanyuze.com to iwacu
-            echo "🔧 Updating .htaccess in public_html to route to iwacu..."
-            cd ~/public_html
+            # Update .htaccess in public_html to point to iwacu/index.php
+            echo "🔧 Updating .htaccess in public_html to point to iwacu..."
             if [ -f ".htaccess" ]; then
               # Backup original
               cp .htaccess .htaccess.backup-$(date +%Y%m%d-%H%M%S) 2>/dev/null || cp .htaccess .htaccess.backup
@@ -535,34 +508,9 @@ jobs:
                 cp iwacu/.htaccess .htaccess
                 echo "✅ .htaccess updated from iwacu"
               else
-                # Fallback: update manually - replace the last RewriteRule for karahanyuze.com
+                # Fallback: update manually
                 echo "📝 Updating .htaccess manually..."
-                # Replace the old rule that sends to index.php with rules that send to iwacu
-                sed -i '/# Send Requests To Front Controller/,/RewriteRule ^ index.php \[L\]/ {
-                  /RewriteRule ^ index.php \[L\]/ {
-                    i\
-    # For karahanyuze.com - redirect to iwacu (new Spotify design)\
-    RewriteCond %{HTTP_HOST} ^(www\.)?karahanyuze\.com$ [NC]\
-    RewriteCond %{REQUEST_URI} !^/iwacu/\
-    RewriteCond %{REQUEST_FILENAME} !-d\
-    RewriteCond %{REQUEST_FILENAME} !-f\
-    RewriteRule ^(.*)$ iwacu/$1 [L]\
-    \
-    # Handle requests that already go to iwacu\
-    RewriteCond %{HTTP_HOST} ^(www\.)?karahanyuze\.com$ [NC]\
-    RewriteCond %{REQUEST_URI} ^/iwacu/\
-    RewriteCond %{REQUEST_FILENAME} !-d\
-    RewriteCond %{REQUEST_FILENAME} !-f\
-    RewriteRule ^iwacu/(.*)$ iwacu/index.php [L]\
-    \
-    # For other domains - serve from root (old code)
-                    d
-                  }
-                }' .htaccess || true
-                
-                # Alternative: simpler replacement
-                sed -i "s|RewriteRule ^ index.php \[L\]|RewriteCond %{REQUEST_URI} !^/iwacu/\nRewriteRule ^(.*)$ iwacu/\$1 [L]\n\n# Handle iwacu requests\nRewriteCond %{HTTP_HOST} ^(www\\.)?karahanyuze\\.com$ [NC]\nRewriteCond %{REQUEST_URI} ^/iwacu/\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteRule ^iwacu/(.*)$ iwacu/index.php [L]\n\n# For other domains\nRewriteCond %{HTTP_HOST} !^(www\\.)?karahanyuze\\.com$ [NC]\nRewriteRule ^ index.php [L]|g" .htaccess || true
-                
+                sed -i "s|RewriteRule ^ index.php \[L\]|RewriteRule ^ iwacu/index.php [L]|g" .htaccess || true
                 echo "✅ .htaccess updated manually"
               fi
             else
