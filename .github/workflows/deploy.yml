@@ -171,35 +171,36 @@ jobs:
             echo "🔧 Starting deployment process..."
             
             # Create private directory if it doesn't exist
-            mkdir -p private/karahanyuze11
+            mkdir -p private/karahanyuze-spotify
             
             # Extract Laravel app to private directory
             echo "📂 Extracting Laravel app to private directory..."
-            tar -xzf deploy-package.tar.gz -C private/karahanyuze11
+            tar -xzf deploy-package.tar.gz -C private/karahanyuze-spotify
             
-            # Copy public folder contents to public_html (preserving other domain folders)
-            echo "📂 Copying public files to public_html (preserving other domains)..."
-            if [ -d "private/karahanyuze11/public" ]; then
+            # Copy public folder contents to public_html/iwacu (preserving other domain folders)
+            echo "📂 Copying public files to public_html/iwacu (preserving other domains)..."
+            mkdir -p public_html/iwacu
+            if [ -d "private/karahanyuze-spotify/public" ]; then
               # Use rsync without --delete and exclude other domain folders
               rsync -av \
                 --exclude='indirimbo' \
                 --exclude='kinyarwanda' \
-                private/karahanyuze11/public/ public_html/
-              echo "✅ Public files copied to public_html (other domains preserved)"
+                private/karahanyuze-spotify/public/ public_html/iwacu/
+              echo "✅ Public files copied to public_html/iwacu (other domains preserved)"
             else
               echo "⚠️  Warning: public folder not found in package"
             fi
             
             # Update index.php to point to private directory
             echo "🔧 Updating index.php paths..."
-            cd ~/public_html
+            cd ~/public_html/iwacu
             if [ -f "index.php" ]; then
               # Backup original
               cp index.php index.php.backup
               
               # Update paths to point to private directory
-              sed -i "s|__DIR__.'/../vendor/autoload.php'|__DIR__.'/../private/karahanyuze11/vendor/autoload.php'|g" index.php
-              sed -i "s|__DIR__.'/../bootstrap/app.php'|__DIR__.'/../private/karahanyuze11/bootstrap/app.php'|g" index.php
+              sed -i "s|__DIR__.'/../vendor/autoload.php'|__DIR__.'/../../private/karahanyuze-spotify/vendor/autoload.php'|g" index.php
+              sed -i "s|__DIR__.'/../bootstrap/app.php'|__DIR__.'/../../private/karahanyuze-spotify/bootstrap/app.php'|g" index.php
               
               echo "✅ index.php updated"
             else
@@ -207,7 +208,7 @@ jobs:
             fi
             
             # Set up environment
-            cd ~/private/karahanyuze11
+            cd ~/private/karahanyuze-spotify
             
             # Preserve existing .env file
             if [ -f .env ]; then
@@ -348,8 +349,8 @@ jobs:
             else
               echo "⚠️  Skipping migrations - .env file not found"
               echo "   To run migrations manually:"
-              echo "   1. Create/upload .env file to ~/private/karahanyuze11/"
-              echo "   2. Run: cd ~/private/karahanyuze11 && php artisan migrate --force"
+              echo "   1. Create/upload .env file to ~/private/karahanyuze-spotify/"
+              echo "   2. Run: cd ~/private/karahanyuze-spotify && php artisan migrate --force"
             fi
             
             # Run optimizations
@@ -358,11 +359,11 @@ jobs:
             php artisan route:cache || echo "⚠️  Route cache failed"
             php artisan view:cache || echo "⚠️  View cache failed"
             
-            # Create symbolic link from public_html/storage to private storage
-            cd ~/public_html
+            # Create symbolic link from public_html/iwacu/storage to private storage
+            cd ~/public_html/iwacu
             if [ ! -L storage ] && [ ! -d storage ]; then
               echo "🔗 Creating storage symbolic link..."
-              ln -s ~/private/karahanyuze11/storage/app/public storage
+              ln -s ~/private/karahanyuze-spotify/storage/app/public storage
               echo "✅ Storage link created"
             elif [ -L storage ]; then
               echo "✅ Storage link already exists"
@@ -374,8 +375,8 @@ jobs:
             rm -f ~/deploy-package.tar.gz
             
             echo "✅ Deployment completed successfully!"
-            echo "📂 Laravel app: ~/private/karahanyuze11/"
-            echo "🌐 Public files: ~/public_html/"
+            echo "📂 Laravel app: ~/private/karahanyuze-spotify/"
+            echo "🌐 Public files: ~/public_html/iwacu/"
             echo ""
             echo "⚠️  IMPORTANT REMINDERS:"
             echo "   1. Ensure storage/app/Audios/ and storage/app/Pictures/ are uploaded separately"
@@ -405,7 +406,7 @@ jobs:
             echo "🔧 Starting deployment process (Retry)..."
             
             # Create private directory if it doesn't exist
-            mkdir -p private/karahanyuze11
+            mkdir -p private/karahanyuze-spotify
             
             # Check if package exists
             if [ ! -f ~/deploy-package.tar.gz ]; then
@@ -415,31 +416,32 @@ jobs:
             
             # Extract Laravel app to private directory
             echo "📂 Extracting Laravel app to private directory..."
-            tar -xzf deploy-package.tar.gz -C private/karahanyuze11
+            tar -xzf deploy-package.tar.gz -C private/karahanyuze-spotify
             
-            # Copy public folder contents to public_html (preserving other domain folders)
-            echo "📂 Copying public files to public_html (preserving other domains)..."
-            if [ -d "private/karahanyuze11/public" ]; then
+            # Copy public folder contents to public_html/iwacu (preserving other domain folders)
+            echo "📂 Copying public files to public_html/iwacu (preserving other domains)..."
+            mkdir -p public_html/iwacu
+            if [ -d "private/karahanyuze-spotify/public" ]; then
               # Use rsync without --delete and exclude other domain folders
               rsync -av \
                 --exclude='indirimbo' \
                 --exclude='kinyarwanda' \
-                private/karahanyuze11/public/ public_html/
-              echo "✅ Public files copied to public_html (other domains preserved)"
+                private/karahanyuze-spotify/public/ public_html/iwacu/
+              echo "✅ Public files copied to public_html/iwacu (other domains preserved)"
             else
               echo "⚠️  Warning: public folder not found in package"
             fi
             
             # Update index.php to point to private directory
             echo "🔧 Updating index.php paths..."
-            cd ~/public_html
+            cd ~/public_html/iwacu
             if [ -f "index.php" ]; then
               # Backup original
               cp index.php index.php.backup
               
               # Update paths to point to private directory
-              sed -i "s|__DIR__.'/../vendor/autoload.php'|__DIR__.'/../private/karahanyuze11/vendor/autoload.php'|g" index.php
-              sed -i "s|__DIR__.'/../bootstrap/app.php'|__DIR__.'/../private/karahanyuze11/bootstrap/app.php'|g" index.php
+              sed -i "s|__DIR__.'/../vendor/autoload.php'|__DIR__.'/../../private/karahanyuze-spotify/vendor/autoload.php'|g" index.php
+              sed -i "s|__DIR__.'/../bootstrap/app.php'|__DIR__.'/../../private/karahanyuze-spotify/bootstrap/app.php'|g" index.php
               
               echo "✅ index.php updated"
             else
@@ -447,7 +449,7 @@ jobs:
             fi
             
             # Set up environment
-            cd ~/private/karahanyuze11
+            cd ~/private/karahanyuze-spotify
             
             # Preserve existing .env file
             if [ -f .env ]; then
@@ -491,9 +493,9 @@ jobs:
             php artisan view:cache || echo "⚠️  View cache failed"
             
             # Create storage link
-            cd ~/public_html
+            cd ~/public_html/iwacu
             if [ ! -L storage ] && [ ! -d storage ]; then
-              ln -s ~/private/karahanyuze11/storage/app/public storage
+              ln -s ~/private/karahanyuze-spotify/storage/app/public storage
             fi
             
             # Clean up

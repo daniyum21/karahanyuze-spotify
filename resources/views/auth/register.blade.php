@@ -1,168 +1,167 @@
-@extends('layouts.app')
+@extends('layouts.spotify')
 
 @section('title', 'Create Account - Karahanyuze')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-b from-black via-blue-950 to-black flex items-center justify-center py-12 px-4">
-    <div class="max-w-md w-full space-y-8">
-        <div>
-            <h2 class="mt-6 text-center text-3xl font-extrabold text-white">
-                Create Account
-            </h2>
-            <p class="mt-2 text-center text-sm text-zinc-400">
-                Or
-                <a href="{{ route('login') }}" class="font-medium text-green-400 hover:text-green-300">
-                    sign in to your existing account
+<div class="flex items-center justify-center min-h-screen px-6 py-12">
+    <div class="w-full max-w-md">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-white mb-2">Sign up for Karahanyuze</h1>
+            <p class="text-zinc-400">
+                Already have an account? 
+                <a href="{{ route('login') }}" class="text-white hover:underline font-medium">
+                    Log in
                 </a>
             </p>
         </div>
         
         @if(session('success'))
-        <div class="bg-green-500/20 border border-green-500 text-green-300 px-4 py-3 rounded-lg">
+        <div class="bg-green-500/20 border border-green-500 text-green-300 px-4 py-3 rounded-lg mb-6">
             {{ session('success') }}
         </div>
         @endif
 
-        <form class="mt-8 space-y-6" action="{{ route('register') }}" method="POST">
-            @csrf
-            
-            <div class="space-y-4">
-                <div>
-                    <label for="FirstName" class="block text-sm font-medium text-zinc-300 mb-1">
-                        First Name <span class="text-red-500">*</span>
-                    </label>
-                    <input 
-                        id="FirstName" 
-                        name="FirstName" 
-                        type="text" 
-                        required 
-                        value="{{ old('FirstName') }}"
-                        class="appearance-none relative block w-full px-3 py-2 border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 rounded-lg focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
-                        placeholder="First Name"
-                    >
-                    @error('FirstName')
-                        <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
-                    @enderror
+        <div class="bg-zinc-900 rounded-lg p-8">
+            <form action="{{ route('register') }}" method="POST" class="space-y-6">
+                @csrf
+                
+                <div class="space-y-4">
+                    <div>
+                        <label for="FirstName" class="block text-sm font-medium text-white mb-2">
+                            First Name <span class="text-red-400">*</span>
+                        </label>
+                        <input 
+                            id="FirstName" 
+                            name="FirstName" 
+                            type="text" 
+                            required 
+                            value="{{ old('FirstName') }}"
+                            class="w-full px-4 py-3 bg-black border border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-white focus:border-white"
+                            placeholder="First Name"
+                        >
+                        @error('FirstName')
+                            <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="LastName" class="block text-sm font-medium text-white mb-2">
+                            Last Name <span class="text-red-400">*</span>
+                        </label>
+                        <input 
+                            id="LastName" 
+                            name="LastName" 
+                            type="text" 
+                            required 
+                            value="{{ old('LastName') }}"
+                            class="w-full px-4 py-3 bg-black border border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-white focus:border-white"
+                            placeholder="Last Name"
+                        >
+                        @error('LastName')
+                            <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="Email" class="block text-sm font-medium text-white mb-2">
+                            Email Address <span class="text-red-400">*</span>
+                        </label>
+                        <input 
+                            id="Email" 
+                            name="Email" 
+                            type="email" 
+                            required 
+                            value="{{ old('Email') }}"
+                            class="w-full px-4 py-3 bg-black border border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-white focus:border-white"
+                            placeholder="your@email.com"
+                        >
+                        @error('Email')
+                            <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="UserName" class="block text-sm font-medium text-white mb-2">
+                            Username <span class="text-zinc-500 text-xs">(Optional)</span>
+                        </label>
+                        <input 
+                            id="UserName" 
+                            name="UserName" 
+                            type="text" 
+                            value="{{ old('UserName') }}"
+                            class="w-full px-4 py-3 bg-black border border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-white focus:border-white"
+                            placeholder="Username"
+                        >
+                        @error('UserName')
+                            <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="PublicName" class="block text-sm font-medium text-white mb-2">
+                            Public Name <span class="text-zinc-500 text-xs">(Optional)</span>
+                        </label>
+                        <input 
+                            id="PublicName" 
+                            name="PublicName" 
+                            type="text" 
+                            value="{{ old('PublicName') }}"
+                            class="w-full px-4 py-3 bg-black border border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-white focus:border-white"
+                            placeholder="Public Display Name"
+                        >
+                        @error('PublicName')
+                            <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-white mb-2">
+                            Password <span class="text-red-400">*</span>
+                        </label>
+                        <input 
+                            id="password" 
+                            name="password" 
+                            type="password" 
+                            required 
+                            class="w-full px-4 py-3 bg-black border border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-white focus:border-white"
+                            placeholder="Password (min 6 characters)"
+                        >
+                        @error('password')
+                            <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="password_confirmation" class="block text-sm font-medium text-white mb-2">
+                            Confirm Password <span class="text-red-400">*</span>
+                        </label>
+                        <input 
+                            id="password_confirmation" 
+                            name="password_confirmation" 
+                            type="password" 
+                            required 
+                            class="w-full px-4 py-3 bg-black border border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-white focus:border-white"
+                            placeholder="Confirm Password"
+                        >
+                    </div>
                 </div>
 
                 <div>
-                    <label for="LastName" class="block text-sm font-medium text-zinc-300 mb-1">
-                        Last Name <span class="text-red-500">*</span>
-                    </label>
-                    <input 
-                        id="LastName" 
-                        name="LastName" 
-                        type="text" 
-                        required 
-                        value="{{ old('LastName') }}"
-                        class="appearance-none relative block w-full px-3 py-2 border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 rounded-lg focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
-                        placeholder="Last Name"
+                    <button 
+                        type="submit" 
+                        class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-3 px-6 rounded-full transition-colors"
                     >
-                    @error('LastName')
-                        <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
-                    @enderror
+                        Sign up
+                    </button>
                 </div>
 
-                <div>
-                    <label for="Email" class="block text-sm font-medium text-zinc-300 mb-1">
-                        Email Address <span class="text-red-500">*</span>
-                    </label>
-                    <input 
-                        id="Email" 
-                        name="Email" 
-                        type="email" 
-                        required 
-                        value="{{ old('Email') }}"
-                        class="appearance-none relative block w-full px-3 py-2 border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 rounded-lg focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
-                        placeholder="your@email.com"
-                    >
-                    @error('Email')
-                        <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
-                    @enderror
+                <div class="text-center">
+                    <p class="text-xs text-zinc-400">
+                        By registering, you agree to verify your email address before logging in.
+                    </p>
                 </div>
-
-                <div>
-                    <label for="UserName" class="block text-sm font-medium text-zinc-300 mb-1">
-                        Username <span class="text-zinc-500 text-xs">(Optional)</span>
-                    </label>
-                    <input 
-                        id="UserName" 
-                        name="UserName" 
-                        type="text" 
-                        value="{{ old('UserName') }}"
-                        class="appearance-none relative block w-full px-3 py-2 border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 rounded-lg focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
-                        placeholder="Username"
-                    >
-                    @error('UserName')
-                        <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
-                    <label for="PublicName" class="block text-sm font-medium text-zinc-300 mb-1">
-                        Public Name <span class="text-zinc-500 text-xs">(Optional)</span>
-                    </label>
-                    <input 
-                        id="PublicName" 
-                        name="PublicName" 
-                        type="text" 
-                        value="{{ old('PublicName') }}"
-                        class="appearance-none relative block w-full px-3 py-2 border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 rounded-lg focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
-                        placeholder="Public Display Name"
-                    >
-                    @error('PublicName')
-                        <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
-                    <label for="password" class="block text-sm font-medium text-zinc-300 mb-1">
-                        Password <span class="text-red-500">*</span>
-                    </label>
-                    <input 
-                        id="password" 
-                        name="password" 
-                        type="password" 
-                        required 
-                        class="appearance-none relative block w-full px-3 py-2 border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 rounded-lg focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
-                        placeholder="Password (min 6 characters)"
-                    >
-                    @error('password')
-                        <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
-                    <label for="password_confirmation" class="block text-sm font-medium text-zinc-300 mb-1">
-                        Confirm Password <span class="text-red-500">*</span>
-                    </label>
-                    <input 
-                        id="password_confirmation" 
-                        name="password_confirmation" 
-                        type="password" 
-                        required 
-                        class="appearance-none relative block w-full px-3 py-2 border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-500 rounded-lg focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
-                        placeholder="Confirm Password"
-                    >
-                </div>
-            </div>
-
-            <div>
-                <button 
-                    type="submit" 
-                    class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
-                >
-                    Register
-                </button>
-            </div>
-
-            <div class="text-center">
-                <p class="text-xs text-zinc-500">
-                    By registering, you agree to verify your email address before logging in.
-                </p>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 </div>
 @endsection
-

@@ -75,6 +75,11 @@ class Song extends Model
         return $this->belongsTo(User::class, 'declined_by', 'UserID');
     }
 
+    public function listeningHistory()
+    {
+        return $this->hasMany(ListeningHistory::class, 'IndirimboID', 'IndirimboID');
+    }
+
     public function isApproved(): bool
     {
         $approvedStatus = SongStatus::where('StatusName', 'Approved')

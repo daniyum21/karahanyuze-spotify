@@ -1,10 +1,9 @@
-@extends('layouts.app')
+@extends('layouts.spotify')
 
 @section('title', 'Edit Thread - Forum - Karahanyuze')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-b from-black via-blue-950 to-black pb-24">
-    <div class="container mx-auto px-4 py-8 max-w-3xl">
+<div class="px-6 py-8 pb-24 max-w-3xl mx-auto">
         <!-- Back Button -->
         <div class="mb-6">
             <a href="{{ route('forum.show', $thread->slug) }}" class="inline-flex items-center gap-2 text-white hover:text-green-500 transition-colors">
@@ -15,7 +14,7 @@
             </a>
         </div>
 
-        <div class="bg-zinc-800 rounded-lg p-8">
+        <div class="bg-zinc-900/50 rounded-lg p-8">
             <h1 class="text-3xl font-bold text-white mb-6">Edit Thread</h1>
 
             @if($errors->any())

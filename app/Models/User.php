@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\ListeningHistory;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -102,6 +103,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function favorites()
     {
         return $this->hasMany(Favorite::class, 'UserID', 'UserID');
+    }
+
+    public function listeningHistory()
+    {
+        return $this->hasMany(ListeningHistory::class, 'UserID', 'UserID');
     }
 
     /**

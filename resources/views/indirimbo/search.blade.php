@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.spotify')
 
 @section('title', 'Search Results - Karahanyuze')
 
@@ -27,8 +27,7 @@
 @endphp
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-b from-black via-blue-950 to-black">
-    <div class="container mx-auto px-4 py-12">
+<div class="px-6 py-8 pb-24">
         <div class="mb-8">
             <h1 class="text-4xl font-bold text-white mb-2">Search Results</h1>
             <p class="text-zinc-400">Searching for: <span class="text-green-500 font-semibold">"{{ $query }}"</span></p>
@@ -54,33 +53,28 @@
                     </svg>
                     Songs ({{ $songs->count() }})
                 </h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    @foreach($songs as $song)
-                    <a href="{{ route('indirimbo.show', [$song->slug, $song->UUID]) }}" class="group">
-                        <div class="bg-zinc-900 rounded-lg overflow-hidden hover:bg-zinc-800 transition-colors">
-                            <div class="aspect-square relative">
-                                @if($song->ProfilePicture)
-                                <img 
-                                    src="{{ \App\Helpers\ImageHelper::getImageUrl($song->ProfilePicture) }}" 
-                                    alt="{{ $song->IndirimboName }}"
-                                    class="w-full h-full object-cover"
-                                >
-                                @else
-                                <div class="w-full h-full bg-zinc-800 flex items-center justify-center">
-                                    <svg class="w-16 h-16 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                                    </svg>
+                <div class="overflow-x-auto scrollbar-hide -mx-6 px-6">
+                    <div class="flex gap-4" style="width: max-content;">
+                        @foreach($songs as $song)
+                        <div class="group flex-shrink-0 w-[180px]">
+                            <a href="{{ route('indirimbo.show', [$song->slug, $song->UUID]) }}" class="block p-4 bg-zinc-900/50 hover:bg-zinc-800 rounded-lg transition-all duration-200 cursor-pointer">
+                                <div class="relative mb-4">
+                                    <img 
+                                        src="{{ \App\Helpers\ImageHelper::getImageUrl($song->ProfilePicture) }}" 
+                                        alt="{{ $song->IndirimboName }}"
+                                        class="w-full aspect-square object-cover rounded-lg shadow-lg"
+                                    />
+                                    <button 
+                                        onclick="event.preventDefault(); playSong('{{ $song->UUID }}', '{{ \App\Helpers\ImageHelper::getImageUrl($song->ProfilePicture) }}', '{{ addslashes($song->IndirimboName) }}', '{{ addslashes($song->artist ? $song->artist->StageName : ($song->orchestra ? $song->orchestra->OrchestreName : ($song->itorero ? $song->itorero->ItoreroName : 'Unknown'))) }}', '{{ route('indirimbo.audio', $song->IndirimboID) }}', {{ $song->IndirimboID }});"
+                                        class="absolute bottom-2 right-2 w-12 h-12 bg-[#1db954] rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg hover:scale-110 z-10"
+                                    >
+                                        <svg class="w-6 h-6 text-black ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M8 5v14l11-7z"/>
+                                        </svg>
+                                    </button>
                                 </div>
-                                @endif
-                                <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                                    <svg class="w-12 h-12 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M8 5v14l11-7z"/>
-                                    </svg>
-                                </div>
-                            </div>
-                            <div class="p-4">
-                                <h3 class="text-white font-semibold mb-1 line-clamp-2 group-hover:text-green-400 transition-colors">{!! highlightText($song->IndirimboName, $query) !!}</h3>
-                                <p class="text-zinc-400 text-sm">
+                                <h3 class="font-semibold text-white mb-1 truncate text-sm">{!! highlightText($song->IndirimboName, $query) !!}</h3>
+                                <p class="text-xs text-zinc-400 truncate">
                                     @if($song->artist)
                                         {!! highlightText($song->artist->StageName, $query) !!}
                                     @elseif($song->orchestra)
@@ -89,10 +83,10 @@
                                         {!! highlightText($song->itorero->ItoreroName, $query) !!}
                                     @endif
                                 </p>
-                            </div>
+                            </a>
                         </div>
-                    </a>
-                    @endforeach
+                        @endforeach
+                    </div>
                 </div>
             </div>
             @endif
@@ -106,34 +100,32 @@
                     </svg>
                     Artists ({{ $artists->count() }})
                 </h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    @foreach($artists as $artist)
-                    <a href="{{ route('artists.show', $artist->slug) }}" class="group">
-                        <div class="bg-zinc-900 rounded-lg overflow-hidden hover:bg-zinc-800 transition-colors">
-                            <div class="aspect-square relative">
-                                @if($artist->ProfilePicture)
-                                <img 
-                                    src="{{ \App\Helpers\ImageHelper::getImageUrl($artist->ProfilePicture) }}" 
-                                    alt="{{ $artist->StageName }}"
-                                    class="w-full h-full object-cover"
-                                >
-                                @else
-                                <div class="w-full h-full bg-zinc-800 flex items-center justify-center">
-                                    <svg class="w-16 h-16 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                    </svg>
+                <div class="overflow-x-auto scrollbar-hide -mx-6 px-6">
+                    <div class="flex gap-4" style="width: max-content;">
+                        @foreach($artists as $artist)
+                        <div class="group flex-shrink-0 w-[180px]">
+                            <a href="{{ route('artists.show', $artist->slug) }}" class="block p-4 bg-zinc-900/50 hover:bg-zinc-800 rounded-lg transition-all duration-200 cursor-pointer">
+                                <div class="relative mb-4">
+                                    <img 
+                                        src="{{ \App\Helpers\ImageHelper::getImageUrl($artist->ProfilePicture) }}" 
+                                        alt="{{ $artist->StageName }}"
+                                        class="w-full aspect-square object-cover rounded-full shadow-lg"
+                                    />
+                                    <button 
+                                        onclick="event.preventDefault(); window.location.href='{{ route('artists.show', $artist->slug) }}';"
+                                        class="absolute bottom-2 right-2 w-12 h-12 bg-[#1db954] rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg hover:scale-110 z-10"
+                                    >
+                                        <svg class="w-6 h-6 text-black ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M8 5v14l11-7z"/>
+                                        </svg>
+                                    </button>
                                 </div>
-                                @endif
-                            </div>
-                            <div class="p-4">
-                                <h3 class="text-white font-semibold mb-1 group-hover:text-purple-400 transition-colors">{!! highlightText($artist->StageName, $query) !!}</h3>
-                                @if($artist->FirstName || $artist->LastName)
-                                <p class="text-zinc-400 text-sm">{!! highlightText($artist->FirstName . ' ' . $artist->LastName, $query) !!}</p>
-                                @endif
-                            </div>
+                                <h3 class="font-semibold text-white mb-1 truncate text-sm group-hover:underline">{!! highlightText($artist->StageName, $query) !!}</h3>
+                                <p class="text-xs text-zinc-400">Artist</p>
+                            </a>
                         </div>
-                    </a>
-                    @endforeach
+                        @endforeach
+                    </div>
                 </div>
             </div>
             @endif
@@ -147,31 +139,32 @@
                     </svg>
                     Orchestras ({{ $orchestras->count() }})
                 </h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    @foreach($orchestras as $orchestra)
-                    <a href="{{ route('orchestre.show', $orchestra->slug) }}" class="group">
-                        <div class="bg-zinc-900 rounded-lg overflow-hidden hover:bg-zinc-800 transition-colors">
-                            <div class="aspect-square relative">
-                                @if($orchestra->ProfilePicture)
-                                <img 
-                                    src="{{ \App\Helpers\ImageHelper::getImageUrl($orchestra->ProfilePicture) }}" 
-                                    alt="{{ $orchestra->OrchestreName }}"
-                                    class="w-full h-full object-cover"
-                                >
-                                @else
-                                <div class="w-full h-full bg-zinc-800 flex items-center justify-center">
-                                    <svg class="w-16 h-16 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                                    </svg>
+                <div class="overflow-x-auto scrollbar-hide -mx-6 px-6">
+                    <div class="flex gap-4" style="width: max-content;">
+                        @foreach($orchestras as $orchestra)
+                        <div class="group flex-shrink-0 w-[180px]">
+                            <a href="{{ route('orchestre.show', $orchestra->slug) }}" class="block p-4 bg-zinc-900/50 hover:bg-zinc-800 rounded-lg transition-all duration-200 cursor-pointer">
+                                <div class="relative mb-4">
+                                    <img 
+                                        src="{{ \App\Helpers\ImageHelper::getImageUrl($orchestra->ProfilePicture) }}" 
+                                        alt="{{ $orchestra->OrchestreName }}"
+                                        class="w-full aspect-square object-cover rounded-lg shadow-lg"
+                                    />
+                                    <button 
+                                        onclick="event.preventDefault(); window.location.href='{{ route('orchestre.show', $orchestra->slug) }}';"
+                                        class="absolute bottom-2 right-2 w-12 h-12 bg-[#1db954] rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg hover:scale-110 z-10"
+                                    >
+                                        <svg class="w-6 h-6 text-black ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M8 5v14l11-7z"/>
+                                        </svg>
+                                    </button>
                                 </div>
-                                @endif
-                            </div>
-                            <div class="p-4">
-                                <h3 class="text-white font-semibold mb-1 group-hover:text-blue-400 transition-colors">{!! highlightText($orchestra->OrchestreName, $query) !!}</h3>
-                            </div>
+                                <h3 class="font-semibold text-white mb-1 truncate text-sm group-hover:underline">{!! highlightText($orchestra->OrchestreName, $query) !!}</h3>
+                                <p class="text-xs text-zinc-400">Orchestra</p>
+                            </a>
                         </div>
-                    </a>
-                    @endforeach
+                        @endforeach
+                    </div>
                 </div>
             </div>
             @endif
@@ -185,31 +178,32 @@
                     </svg>
                     Itoreros ({{ $itoreros->count() }})
                 </h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    @foreach($itoreros as $itorero)
-                    <a href="{{ route('itorero.show', $itorero->slug) }}" class="group">
-                        <div class="bg-zinc-900 rounded-lg overflow-hidden hover:bg-zinc-800 transition-colors">
-                            <div class="aspect-square relative">
-                                @if($itorero->ProfilePicture)
-                                <img 
-                                    src="{{ \App\Helpers\ImageHelper::getImageUrl($itorero->ProfilePicture) }}" 
-                                    alt="{{ $itorero->ItoreroName }}"
-                                    class="w-full h-full object-cover"
-                                >
-                                @else
-                                <div class="w-full h-full bg-zinc-800 flex items-center justify-center">
-                                    <svg class="w-16 h-16 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                                    </svg>
+                <div class="overflow-x-auto scrollbar-hide -mx-6 px-6">
+                    <div class="flex gap-4" style="width: max-content;">
+                        @foreach($itoreros as $itorero)
+                        <div class="group flex-shrink-0 w-[180px]">
+                            <a href="{{ route('itorero.show', $itorero->slug) }}" class="block p-4 bg-zinc-900/50 hover:bg-zinc-800 rounded-lg transition-all duration-200 cursor-pointer">
+                                <div class="relative mb-4">
+                                    <img 
+                                        src="{{ \App\Helpers\ImageHelper::getImageUrl($itorero->ProfilePicture) }}" 
+                                        alt="{{ $itorero->ItoreroName }}"
+                                        class="w-full aspect-square object-cover rounded-lg shadow-lg"
+                                    />
+                                    <button 
+                                        onclick="event.preventDefault(); window.location.href='{{ route('itorero.show', $itorero->slug) }}';"
+                                        class="absolute bottom-2 right-2 w-12 h-12 bg-[#1db954] rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg hover:scale-110 z-10"
+                                    >
+                                        <svg class="w-6 h-6 text-black ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M8 5v14l11-7z"/>
+                                        </svg>
+                                    </button>
                                 </div>
-                                @endif
-                            </div>
-                            <div class="p-4">
-                                <h3 class="text-white font-semibold mb-1 group-hover:text-yellow-400 transition-colors">{!! highlightText($itorero->ItoreroName, $query) !!}</h3>
-                            </div>
+                                <h3 class="font-semibold text-white mb-1 truncate text-sm group-hover:underline">{!! highlightText($itorero->ItoreroName, $query) !!}</h3>
+                                <p class="text-xs text-zinc-400">Itorero</p>
+                            </a>
                         </div>
-                    </a>
-                    @endforeach
+                        @endforeach
+                    </div>
                 </div>
             </div>
             @endif
@@ -223,37 +217,74 @@
                     </svg>
                     Playlists ({{ $playlists->count() }})
                 </h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    @foreach($playlists as $playlist)
-                    <a href="{{ route('playlists.show', $playlist->slug) }}" class="group">
-                        <div class="bg-zinc-900 rounded-lg overflow-hidden hover:bg-zinc-800 transition-colors">
-                            <div class="aspect-square relative">
-                                @if($playlist->ProfilePicture)
-                                <img 
-                                    src="{{ \App\Helpers\ImageHelper::getImageUrl($playlist->ProfilePicture) }}" 
-                                    alt="{{ $playlist->PlaylistName }}"
-                                    class="w-full h-full object-cover"
-                                >
-                                @else
-                                <div class="w-full h-full bg-zinc-800 flex items-center justify-center">
-                                    <svg class="w-16 h-16 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                                    </svg>
+                <div class="overflow-x-auto scrollbar-hide -mx-6 px-6">
+                    <div class="flex gap-4" style="width: max-content;">
+                        @foreach($playlists as $playlist)
+                        <div class="group flex-shrink-0 w-[180px]">
+                            <a href="{{ route('playlists.show', $playlist->slug) }}" class="block p-4 bg-zinc-900/50 hover:bg-zinc-800 rounded-lg transition-all duration-200 cursor-pointer">
+                                <div class="relative mb-4">
+                                    <img 
+                                        src="{{ \App\Helpers\ImageHelper::getImageUrl($playlist->ProfilePicture) }}" 
+                                        alt="{{ $playlist->PlaylistName }}"
+                                        class="w-full aspect-square object-cover rounded-lg shadow-lg"
+                                    />
+                                    <button 
+                                        onclick="event.preventDefault(); window.location.href='{{ route('playlists.show', $playlist->slug) }}';"
+                                        class="absolute bottom-2 right-2 w-12 h-12 bg-[#1db954] rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg hover:scale-110 z-10"
+                                    >
+                                        <svg class="w-6 h-6 text-black ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M8 5v14l11-7z"/>
+                                        </svg>
+                                    </button>
                                 </div>
-                                @endif
-                            </div>
-                            <div class="p-4">
-                                <h3 class="text-white font-semibold mb-1 group-hover:text-pink-400 transition-colors">{!! highlightText($playlist->PlaylistName, $query) !!}</h3>
-                            </div>
+                                <h3 class="font-semibold text-white mb-1 truncate text-sm group-hover:underline">{!! highlightText($playlist->PlaylistName, $query) !!}</h3>
+                                <p class="text-xs text-zinc-400">{{ $playlist->songs->count() }} songs</p>
+                            </a>
                         </div>
-                    </a>
-                    @endforeach
+                        @endforeach
+                    </div>
                 </div>
             </div>
             @endif
         </div>
         @endif
-    </div>
 </div>
+
+<style>
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+</style>
+
+<script>
+function playSong(uuid, imageUrl, title, artist, audioUrl, songId = null) {
+    if (songId) {
+        window.currentSongId = songId;
+    }
+    
+    if (typeof window.playSongFromPlayer === 'function') {
+        window.playSongFromPlayer(uuid, imageUrl, title, artist, audioUrl);
+    } else {
+        const player = document.getElementById('bottom-audio-player');
+        const playerImage = document.getElementById('player-image');
+        const playerTitle = document.getElementById('player-title');
+        const playerArtist = document.getElementById('player-artist');
+        const musicPlayer = document.getElementById('music-player');
+        
+        if (player && audioUrl) {
+            player.src = audioUrl;
+            if (playerImage) playerImage.src = imageUrl || '/placeholder.svg';
+            if (playerTitle) playerTitle.textContent = title;
+            if (playerArtist) playerArtist.textContent = artist;
+            if (musicPlayer) musicPlayer.classList.remove('hidden');
+            player.play().catch(e => console.error('Play error:', e));
+        }
+    }
+}
+</script>
 @endsection
 

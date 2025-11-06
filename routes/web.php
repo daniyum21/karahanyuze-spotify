@@ -404,6 +404,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // Favorites routes (authenticated users only - no verification required)
 Route::middleware(['auth'])->group(function () {
+    // Listening History
+    Route::post('/listening-history/track', [\App\Http\Controllers\ListeningHistoryController::class, 'track'])->name('listening-history.track');
+    
     // Legacy route for songs (backward compatibility)
     Route::post('/favorites/{songId}/toggle', function ($songId) {
         return app(\App\Http\Controllers\UserDashboardController::class)->toggleFavorite(request(), 'song', $songId);

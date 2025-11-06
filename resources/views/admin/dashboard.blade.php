@@ -1,488 +1,196 @@
-@extends('layouts.app')
+@extends('layouts.spotify')
 
 @section('title', 'Admin Dashboard - Karahanyuze')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-b from-black via-blue-950 to-black">
-    <div class="container mx-auto px-4 py-12">
-        <div class="mb-8">
-            <h1 class="text-4xl font-bold text-white mb-2">Admin Dashboard</h1>
-            <p class="text-zinc-400">Welcome back, {{ Auth::user()->FirstName ?? Auth::user()->UserName }}!</p>
-        </div>
+<div class="px-6 py-8 pb-24">
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold text-white mb-2">Admin Dashboard</h1>
+        <p class="text-zinc-400">Welcome back, {{ Auth::user()->FirstName ?? Auth::user()->UserName }}!</p>
+    </div>
 
-        <!-- Statistics Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <!-- Total Songs -->
-            <a href="{{ route('admin.songs.index') }}" class="bg-zinc-900 rounded-lg p-6 hover:bg-zinc-800 transition-colors cursor-pointer block">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                        <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                        </svg>
-                    </div>
-                    <span class="text-blue-500 hover:text-blue-400 text-sm font-medium">
-                        View All →
-                    </span>
-                </div>
-                <h3 class="text-3xl font-bold text-white mb-1">{{ $totalSongs }}</h3>
-                <p class="text-zinc-400 text-sm">Total Songs</p>
-            </a>
-
-            <!-- Approved Songs -->
-            <a href="{{ route('admin.songs.index', ['status' => 'approved']) }}" class="bg-zinc-900 rounded-lg p-6 hover:bg-zinc-800 transition-colors cursor-pointer block">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
-                        <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <span class="text-green-500 hover:text-green-400 text-sm font-medium">
-                        Manage →
-                    </span>
-                </div>
-                <h3 class="text-3xl font-bold text-white mb-1">{{ $approvedSongs }}</h3>
-                <p class="text-zinc-400 text-sm">Approved Songs</p>
-            </a>
-
-            <!-- Pending Songs -->
-            <a href="{{ route('admin.songs.index', ['status' => 'pending']) }}" class="bg-zinc-900 rounded-lg p-6 hover:bg-zinc-800 transition-colors cursor-pointer block">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="w-12 h-12 bg-yellow-500/20 rounded-lg flex items-center justify-center">
-                        <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    @if($pendingSongs > 0)
-                    <span class="text-yellow-500 hover:text-yellow-400 text-sm font-medium">
-                        Review →
-                    </span>
-                    @endif
-                </div>
-                <h3 class="text-3xl font-bold text-white mb-1">{{ $pendingSongs }}</h3>
-                <p class="text-zinc-400 text-sm">Pending Songs</p>
-            </a>
-
-            <!-- Featured Songs -->
-            <a href="{{ route('admin.songs.index', ['featured' => 'yes']) }}" class="bg-zinc-900 rounded-lg p-6 hover:bg-zinc-800 transition-colors cursor-pointer block">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                        <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                        </svg>
-                    </div>
-                    <span class="text-purple-500 hover:text-purple-400 text-sm font-medium">
-                        Manage →
-                    </span>
-                </div>
-                <h3 class="text-3xl font-bold text-white mb-1">{{ $featuredSongs }}</h3>
-                <p class="text-zinc-400 text-sm">Featured Songs</p>
-            </a>
-        </div>
-
-        <!-- Additional Stats -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <!-- Total Artists -->
-            <a href="{{ route('admin.artists.index') }}" class="bg-zinc-900 rounded-lg p-6 hover:bg-zinc-800 transition-colors cursor-pointer block">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                    </div>
-                    <span class="text-green-500 hover:text-green-400 text-sm font-medium">
-                        Manage →
-                    </span>
-                </div>
-                <h3 class="text-3xl font-bold text-white mb-1">{{ $totalArtists }}</h3>
-                <p class="text-zinc-400 text-sm">Artists</p>
-            </a>
-
-            <!-- Total Orchestras -->
-            <a href="{{ route('admin.orchestras.index') }}" class="bg-zinc-900 rounded-lg p-6 hover:bg-zinc-800 transition-colors cursor-pointer block">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                        </svg>
-                    </div>
-                    <span class="text-blue-500 hover:text-blue-400 text-sm font-medium">
-                        Manage →
-                    </span>
-                </div>
-                <h3 class="text-3xl font-bold text-white mb-1">{{ $totalOrchestras }}</h3>
-                <p class="text-zinc-400 text-sm">Orchestras</p>
-            </a>
-
-            <!-- Total Itoreros -->
-            <a href="{{ route('admin.itoreros.index') }}" class="bg-zinc-900 rounded-lg p-6 hover:bg-zinc-800 transition-colors cursor-pointer block">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                    </div>
-                    <span class="text-purple-500 hover:text-purple-400 text-sm font-medium">
-                        Manage →
-                    </span>
-                </div>
-                <h3 class="text-3xl font-bold text-white mb-1">{{ $totalItoreros }}</h3>
-                <p class="text-zinc-400 text-sm">Itoreros</p>
-            </a>
-
-            <!-- Total Playlists -->
-            <a href="{{ route('admin.playlists.index') }}" class="bg-zinc-900 rounded-lg p-6 hover:bg-zinc-800 transition-colors cursor-pointer block">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                        </svg>
-                    </div>
-                    <span class="text-yellow-500 hover:text-yellow-400 text-sm font-medium">
-                        Manage →
-                    </span>
-                </div>
-                <h3 class="text-3xl font-bold text-white mb-1">{{ $totalPlaylists }}</h3>
-                <p class="text-zinc-400 text-sm">Playlists</p>
-            </a>
-
-            <!-- Total Users -->
-            <a href="{{ route('admin.users.index') }}" class="bg-zinc-900 rounded-lg p-6 hover:bg-zinc-800 transition-colors cursor-pointer block">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="w-10 h-10 bg-indigo-500/20 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                    </div>
-                    <span class="text-indigo-500 hover:text-indigo-400 text-sm font-medium">
-                        Manage →
-                    </span>
-                </div>
-                <h3 class="text-3xl font-bold text-white mb-1">{{ $totalUsers }}</h3>
-                <p class="text-zinc-400 text-sm">Users</p>
-            </a>
-        </div>
-
-        <!-- Admin Navigation -->
-        <div class="mb-8">
-            <h2 class="text-2xl font-bold text-white mb-4">Admin Navigation</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <!-- Songs Management -->
-                <div class="bg-zinc-900 rounded-lg p-6">
-                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                        </svg>
-                        Songs
-                    </h3>
-                    <div class="space-y-2">
-                        <a href="{{ route('admin.songs.create') }}" class="block px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg transition-colors text-sm font-medium">
-                            Upload New Song
-                        </a>
-                        <a href="{{ route('admin.songs.index') }}" class="block px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors text-sm font-medium">
-                            Manage Songs
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Artists Management -->
-                <div class="bg-zinc-900 rounded-lg p-6">
-                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        Artists
-                    </h3>
-                    <div class="space-y-2">
-                        <a href="{{ route('admin.artists.index') }}" class="block px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors text-sm font-medium">
-                            Manage Artists
-                        </a>
-                        <a href="{{ route('admin.artists.create') }}" class="block px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg transition-colors text-sm font-medium">
-                            Add New Artist
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Orchestras Management -->
-                <div class="bg-zinc-900 rounded-lg p-6">
-                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                        </svg>
-                        Orchestras
-                    </h3>
-                    <div class="space-y-2">
-                        <a href="{{ route('admin.orchestras.index') }}" class="block px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors text-sm font-medium">
-                            Manage Orchestras
-                        </a>
-                        <a href="{{ route('admin.orchestras.create') }}" class="block px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg transition-colors text-sm font-medium">
-                            Add New Orchestra
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Itoreros Management -->
-                <div class="bg-zinc-900 rounded-lg p-6">
-                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                        Itoreros
-                    </h3>
-                    <div class="space-y-2">
-                        <a href="{{ route('admin.itoreros.index') }}" class="block px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors text-sm font-medium">
-                            Manage Itoreros
-                        </a>
-                        <a href="{{ route('admin.itoreros.create') }}" class="block px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg transition-colors text-sm font-medium">
-                            Add New Itorero
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Playlists Management -->
-                <div class="bg-zinc-900 rounded-lg p-6">
-                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                        </svg>
-                        Playlists
-                    </h3>
-                    <div class="space-y-2">
-                        <a href="{{ route('admin.playlists.index') }}" class="block px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors text-sm font-medium">
-                            Manage Playlists
-                        </a>
-                        <a href="{{ route('admin.playlists.create') }}" class="block px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg transition-colors text-sm font-medium">
-                            Add New Playlist
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Users Management -->
-                <div class="bg-zinc-900 rounded-lg p-6">
-                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                        Users
-                    </h3>
-                    <div class="space-y-2">
-                        <a href="{{ route('admin.users.index') }}" class="block px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors text-sm font-medium">
-                            Manage Users
-                        </a>
-                        <a href="{{ route('admin.users.create') }}" class="block px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg transition-colors text-sm font-medium">
-                            Add New User
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Forum Management -->
-                <div class="bg-zinc-900 rounded-lg p-6">
-                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                        </svg>
-                        Forum
-                    </h3>
-                    <div class="space-y-2">
-                        <a href="{{ route('admin.forum.index') }}" class="block px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors text-sm font-medium">
-                            Manage Forum
-                        </a>
-                        @if($pendingThreads > 0)
-                        <a href="{{ route('admin.forum.index') }}" class="block px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg transition-colors text-sm font-medium">
-                            Pending Threads ({{ $pendingThreads }})
-                        </a>
-                        @endif
-                        @if($unresolvedFlags > 0)
-                        <a href="{{ route('admin.forum.flags.index') }}" class="block px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors text-sm font-medium">
-                            Flagged Content ({{ $unresolvedFlags }})
-                        </a>
-                        @endif
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Pending Songs Section -->
-        @if($pendingSongsList->count() > 0)
-        <div id="pending-songs" class="mb-8">
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <!-- Total Songs -->
+        <a href="{{ route('admin.songs.index') }}" class="bg-zinc-900/50 hover:bg-zinc-800 rounded-lg p-6 transition-colors cursor-pointer block group">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-2xl font-bold text-white">Pending Songs for Approval</h2>
-                <span class="px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-sm font-semibold">{{ $pendingSongsList->count() }} pending</span>
-            </div>
-            <div class="bg-zinc-900 rounded-lg overflow-hidden">
-                <table class="w-full">
-                    <thead class="bg-zinc-800">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Song</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Submitted By</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Section</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Category</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Submitted</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-zinc-800">
-                        @foreach($pendingSongsList as $song)
-                        <tr class="hover:bg-zinc-800/50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center gap-3">
-                                    @if($song->ProfilePicture)
-                                    <img 
-                                        src="{{ \App\Helpers\ImageHelper::getImageUrl($song->ProfilePicture) }}" 
-                                        alt="{{ $song->IndirimboName }}"
-                                        class="w-10 h-10 rounded object-cover"
-                                    >
-                                    @else
-                                    <div class="w-10 h-10 rounded bg-zinc-700 flex items-center justify-center">
-                                        <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                                        </svg>
-                                    </div>
-                                    @endif
-                                    <div>
-                                        <div class="text-white font-medium">{{ $song->IndirimboName }}</div>
-                                        @if($song->Description)
-                                        <div class="text-sm text-zinc-400">{{ \Illuminate\Support\Str::limit($song->Description, 50) }}</div>
-                                        @endif
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-white">
-                                    @if($song->user)
-                                        {{ $song->user->PublicName ?? $song->user->FirstName . ' ' . $song->user->LastName }}
-                                        <div class="text-sm text-zinc-400">{{ $song->user->Email ?? '' }}</div>
-                                    @else
-                                        <span class="text-zinc-500">Unknown</span>
-                                    @endif
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-white">
-                                    @if($song->artist)
-                                        <span class="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs font-semibold">Artist</span>
-                                        <div class="text-sm text-zinc-400 mt-1">{{ $song->artist->StageName }}</div>
-                                    @elseif($song->orchestra)
-                                        <span class="px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs font-semibold">Orchestra</span>
-                                        <div class="text-sm text-zinc-400 mt-1">{{ $song->orchestra->OrchestreName }}</div>
-                                    @elseif($song->itorero)
-                                        <span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs font-semibold">Itorero</span>
-                                        <div class="text-sm text-zinc-400 mt-1">{{ $song->itorero->ItoreroName }}</div>
-                                    @else
-                                        <span class="text-zinc-500 text-sm">No section</span>
-                                    @endif
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                @if($song->artist)
-                                <span class="text-zinc-300">Artist</span>
-                                @elseif($song->orchestra)
-                                <span class="text-zinc-300">Orchestra</span>
-                                @elseif($song->itorero)
-                                <span class="text-zinc-300">Itorero</span>
-                                @else
-                                <span class="text-zinc-500">Standalone</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-zinc-300 text-sm">
-                                {{ $song->created_at ? $song->created_at->format('M d, Y') : 'N/A' }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <a 
-                                    href="{{ route('admin.songs.edit', $song->UUID) }}" 
-                                    class="text-green-400 hover:text-green-300 transition-colors mr-3"
-                                >
-                                    Review
-                                </a>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        @endif
-
-        <!-- Recent Songs -->
-        @if($recentSongs->count() > 0)
-        <div>
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-2xl font-bold text-white">Recent Songs</h2>
-                <a href="{{ route('admin.songs.index') }}" class="text-green-500 hover:text-green-400 text-sm font-medium">
+                <div class="w-12 h-12 bg-[#1db954]/20 rounded-lg flex items-center justify-center group-hover:bg-[#1db954]/30 transition-colors">
+                    <svg class="w-6 h-6 text-[#1db954]" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+                    </svg>
+                </div>
+                <span class="text-[#1db954] hover:text-[#1ed760] text-sm font-medium">
                     View All →
-                </a>
+                </span>
             </div>
-            <div class="bg-zinc-900 rounded-lg overflow-hidden">
-                <table class="w-full">
-                    <thead class="bg-zinc-800">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Song</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Owner</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-zinc-800">
-                        @foreach($recentSongs as $song)
-                        <tr class="hover:bg-zinc-800/50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center gap-3">
-                                    @if($song->ProfilePicture)
-                                    <img 
-                                        src="{{ \App\Helpers\ImageHelper::getImageUrl($song->ProfilePicture) }}" 
-                                        alt="{{ $song->IndirimboName }}"
-                                        class="w-10 h-10 rounded object-cover"
-                                    >
-                                    @else
-                                    <div class="w-10 h-10 rounded bg-zinc-700 flex items-center justify-center">
-                                        <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                                        </svg>
-                                    </div>
-                                    @endif
-                                    <div>
-                                        <div class="text-white font-medium">{{ $song->IndirimboName }}</div>
-                                        <div class="text-sm text-zinc-400">{{ $song->created_at ? $song->created_at->format('M d, Y') : 'N/A' }}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-white">
-                                    @if($song->artist)
-                                        {{ $song->artist->StageName }}
-                                    @elseif($song->orchestra)
-                                        {{ $song->orchestra->OrchestreName }}
-                                    @elseif($song->itorero)
-                                        {{ $song->itorero->ItoreroName }}
-                                    @else
-                                        <span class="text-zinc-500">No owner</span>
-                                    @endif
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                @if($song->status)
-                                    <span class="px-2 py-1 text-xs rounded-full {{ $song->status->StatusID == 2 ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400' }}">
-                                        {{ $song->status->StatusName }}
-                                    </span>
-                                @else
-                                    <span class="text-zinc-500 text-sm">Unknown</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <a 
-                                    href="{{ route('admin.songs.edit', $song->UUID) }}" 
-                                    class="text-green-400 hover:text-green-300 transition-colors"
-                                >
-                                    Edit
-                                </a>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+            <h3 class="text-3xl font-bold text-white mb-1">{{ $totalSongs }}</h3>
+            <p class="text-zinc-400 text-sm">Total Songs</p>
+        </a>
+
+        <!-- Approved Songs -->
+        <a href="{{ route('admin.songs.index', ['status' => 'approved']) }}" class="bg-zinc-900/50 hover:bg-zinc-800 rounded-lg p-6 transition-colors cursor-pointer block group">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center group-hover:bg-green-500/30 transition-colors">
+                    <svg class="w-6 h-6 text-green-500" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                    </svg>
+                </div>
+                <span class="text-green-500 hover:text-green-400 text-sm font-medium">
+                    Manage →
+                </span>
             </div>
+            <h3 class="text-3xl font-bold text-white mb-1">{{ $approvedSongs }}</h3>
+            <p class="text-zinc-400 text-sm">Approved Songs</p>
+        </a>
+
+        <!-- Pending Songs -->
+        <a href="{{ route('admin.songs.index', ['status' => 'pending']) }}" class="bg-zinc-900/50 hover:bg-zinc-800 rounded-lg p-6 transition-colors cursor-pointer block group">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-yellow-500/20 rounded-lg flex items-center justify-center group-hover:bg-yellow-500/30 transition-colors">
+                    <svg class="w-6 h-6 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                    </svg>
+                </div>
+                @if($pendingSongs > 0)
+                <span class="text-yellow-500 hover:text-yellow-400 text-sm font-medium">
+                    Review →
+                </span>
+                @endif
+            </div>
+            <h3 class="text-3xl font-bold text-white mb-1">{{ $pendingSongs }}</h3>
+            <p class="text-zinc-400 text-sm">Pending Songs</p>
+        </a>
+
+        <!-- Featured Songs -->
+        <a href="{{ route('admin.songs.index', ['featured' => 'yes']) }}" class="bg-zinc-900/50 hover:bg-zinc-800 rounded-lg p-6 transition-colors cursor-pointer block group">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center group-hover:bg-purple-500/30 transition-colors">
+                    <svg class="w-6 h-6 text-purple-500" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                    </svg>
+                </div>
+                <span class="text-purple-500 hover:text-purple-400 text-sm font-medium">
+                    Manage →
+                </span>
+            </div>
+            <h3 class="text-3xl font-bold text-white mb-1">{{ $featuredSongs }}</h3>
+            <p class="text-zinc-400 text-sm">Featured Songs</p>
+        </a>
+    </div>
+
+    <!-- Additional Stats -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <!-- Total Artists -->
+        <a href="{{ route('admin.artists.index') }}" class="bg-zinc-900/50 hover:bg-zinc-800 rounded-lg p-6 transition-colors cursor-pointer block group">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-[#1db954]/20 rounded-lg flex items-center justify-center group-hover:bg-[#1db954]/30 transition-colors">
+                    <svg class="w-6 h-6 text-[#1db954]" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
+                </div>
+                <span class="text-[#1db954] hover:text-[#1ed760] text-sm font-medium">
+                    Manage →
+                </span>
+            </div>
+            <h3 class="text-3xl font-bold text-white mb-1">{{ $totalArtists }}</h3>
+            <p class="text-zinc-400 text-sm">Artists</p>
+        </a>
+
+        <!-- Total Orchestras -->
+        <a href="{{ route('admin.orchestras.index') }}" class="bg-zinc-900/50 hover:bg-zinc-800 rounded-lg p-6 transition-colors cursor-pointer block group">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center group-hover:bg-blue-500/30 transition-colors">
+                    <svg class="w-6 h-6 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                    </svg>
+                </div>
+                <span class="text-blue-500 hover:text-blue-400 text-sm font-medium">
+                    Manage →
+                </span>
+            </div>
+            <h3 class="text-3xl font-bold text-white mb-1">{{ $totalOrchestras }}</h3>
+            <p class="text-zinc-400 text-sm">Orchestras</p>
+        </a>
+
+        <!-- Total Itoreros -->
+        <a href="{{ route('admin.itoreros.index') }}" class="bg-zinc-900/50 hover:bg-zinc-800 rounded-lg p-6 transition-colors cursor-pointer block group">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center group-hover:bg-orange-500/30 transition-colors">
+                    <svg class="w-6 h-6 text-orange-500" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                </div>
+                <span class="text-orange-500 hover:text-orange-400 text-sm font-medium">
+                    Manage →
+                </span>
+            </div>
+            <h3 class="text-3xl font-bold text-white mb-1">{{ $totalItoreros }}</h3>
+            <p class="text-zinc-400 text-sm">Itoreros</p>
+        </a>
+
+        <!-- Total Users -->
+        <a href="{{ route('admin.users.index') }}" class="bg-zinc-900/50 hover:bg-zinc-800 rounded-lg p-6 transition-colors cursor-pointer block group">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-pink-500/20 rounded-lg flex items-center justify-center group-hover:bg-pink-500/30 transition-colors">
+                    <svg class="w-6 h-6 text-pink-500" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                </div>
+                <span class="text-pink-500 hover:text-pink-400 text-sm font-medium">
+                    Manage →
+                </span>
+            </div>
+            <h3 class="text-3xl font-bold text-white mb-1">{{ $totalUsers }}</h3>
+            <p class="text-zinc-400 text-sm">Users</p>
+        </a>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold text-white mb-4">Quick Actions</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <a href="{{ route('admin.songs.create') }}" class="bg-zinc-900/50 hover:bg-zinc-800 rounded-lg p-6 transition-colors cursor-pointer block group">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-[#1db954]/20 rounded-lg flex items-center justify-center group-hover:bg-[#1db954]/30 transition-colors">
+                        <svg class="w-6 h-6 text-[#1db954]" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-white mb-1">Upload Song</h3>
+                        <p class="text-zinc-400 text-sm">Add a new song to the collection</p>
+                    </div>
+                </div>
+            </a>
+
+            <a href="{{ route('admin.forum.index') }}" class="bg-zinc-900/50 hover:bg-zinc-800 rounded-lg p-6 transition-colors cursor-pointer block group">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center group-hover:bg-blue-500/30 transition-colors">
+                        <svg class="w-6 h-6 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-white mb-1">Forum Management</h3>
+                        <p class="text-zinc-400 text-sm">Manage threads and flags</p>
+                    </div>
+                </div>
+            </a>
+
+            <a href="{{ route('admin.playlists.index') }}" class="bg-zinc-900/50 hover:bg-zinc-800 rounded-lg p-6 transition-colors cursor-pointer block group">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center group-hover:bg-purple-500/30 transition-colors">
+                        <svg class="w-6 h-6 text-purple-500" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-white mb-1">Manage Playlists</h3>
+                        <p class="text-zinc-400 text-sm">Create and edit playlists</p>
+                    </div>
+                </div>
+            </a>
         </div>
-        @endif
     </div>
 </div>
 @endsection
-

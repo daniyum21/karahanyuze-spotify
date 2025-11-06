@@ -1,12 +1,12 @@
-@extends('layouts.app')
+@extends('layouts.spotify')
 
 @section('title', 'Login - Karahanyuze')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-b from-black via-blue-950 to-black flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-md w-full space-y-8">
-        <div class="text-center">
-            <h1 class="text-4xl font-bold text-white mb-2">Login to your Account</h1>
+<div class="flex items-center justify-center min-h-screen px-6">
+    <div class="w-full max-w-md">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-white mb-2">Log in to Karahanyuze</h1>
             <p class="text-zinc-400">Niba ushaka gushyiraho indirimbo, ugomba kugira account</p>
         </div>
 
@@ -47,7 +47,7 @@
                         value="{{ old('UserName') }}"
                         required
                         autofocus
-                        class="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        class="w-full px-4 py-3 bg-black border border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-white focus:border-white"
                         placeholder="Enter your username or email"
                     >
                     @error('UserName')
@@ -64,7 +64,7 @@
                         id="password"
                         name="password"
                         required
-                        class="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        class="w-full px-4 py-3 bg-black border border-zinc-700 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-white focus:border-white"
                         placeholder="Enter your password"
                     >
                     @error('password')
@@ -75,17 +75,17 @@
                 <div>
                     <button
                         type="submit"
-                        class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+                        class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-3 px-6 rounded-full transition-colors"
                     >
-                        Login
+                        Log in
                     </button>
                 </div>
 
                 <div class="text-center">
                     <p class="text-zinc-400 text-sm">
                         Don't have an account? 
-                        <a href="{{ route('register') }}" class="text-green-500 hover:text-green-400 transition-colors font-medium">
-                            Iyandikishe
+                        <a href="{{ route('register') }}" class="text-white hover:underline font-medium">
+                            Sign up for Karahanyuze
                         </a>
                     </p>
                 </div>
@@ -94,4 +94,3 @@
     </div>
 </div>
 @endsection
-

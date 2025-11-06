@@ -1,190 +1,146 @@
-@extends('layouts.app')
+@extends('layouts.spotify')
 
 @section('title', $song->IndirimboName . ' - Karahanyuze')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-b from-black via-blue-950 to-black pb-24">
-    <div class="container mx-auto px-4 py-8">
-        <!-- Back Button -->
-        <div class="mb-6">
-            <a href="{{ url()->previous() !== request()->url() ? url()->previous() : route('home') }}" class="inline-flex items-center gap-2 text-white hover:text-green-500 transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                </svg>
-                <span>Back</span>
-            </a>
-        </div>
-
-        <!-- Song Header -->
-        <div class="flex flex-col md:flex-row gap-8 mb-12">
-            <div class="flex-shrink-0">
-                <img 
-                    src="{{ \App\Helpers\ImageHelper::getImageUrl($song->ProfilePicture) }}" 
-                    alt="{{ $song->IndirimboName }}"
-                    class="w-64 h-64 md:w-80 md:h-80 rounded-lg object-cover shadow-2xl"
-                />
-            </div>
-            <div class="flex-1">
-                <!-- Category Tag -->
-                <div class="mb-3">
-                    <span class="text-blue-400 text-sm font-medium uppercase tracking-wide">
-                        @if($song->orchestra)
-                            Orchestre
-                        @elseif($song->itorero)
-                            Itorero
-                        @elseif($song->playlists && $song->playlists->count() > 0)
-                            Playlist
-                        @else
-                            Indirimbo
-                        @endif
-                    </span>
-                </div>
-
-                <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">{{ $song->IndirimboName }}</h1>
+<div class="relative">
+    <!-- Gradient Header -->
+    <div class="absolute top-0 left-0 right-0 h-[400px] bg-gradient-to-b from-[#1db954] via-[#1db954]/80 to-black z-0"></div>
+    
+    <div class="relative z-10 px-6 pt-8 pb-24">
+        <!-- Header Section -->
+        <div class="flex items-end gap-6 mb-8">
+            <img 
+                src="{{ \App\Helpers\ImageHelper::getImageUrl($song->ProfilePicture) }}" 
+                alt="{{ $song->IndirimboName }}"
+                class="w-[232px] h-[232px] rounded-lg object-cover shadow-2xl flex-shrink-0"
+            />
+            <div class="flex-1 pb-4">
+                <p class="text-sm text-white mb-2">Song</p>
+                <h1 class="text-5xl md:text-7xl font-bold text-white mb-4">{{ $song->IndirimboName }}</h1>
                 
                 @if($song->owner())
-                <div class="mb-6">
+                <div class="mb-4">
                     <p class="text-white text-lg">
-                        by 
-                        @if($song->artist)
-                            <a href="{{ route('artists.show', $song->artist->slug) }}" class="text-green-500 hover:text-green-400 font-semibold transition-colors">
-                                {{ $song->artist->StageName }}
-                            </a>
-                        @elseif($song->orchestra)
-                            <a href="{{ route('orchestre.show', $song->orchestra->slug) }}" class="text-green-500 hover:text-green-400 font-semibold transition-colors">
-                                {{ $song->orchestra->OrchestreName }}
-                            </a>
-                        @elseif($song->itorero)
-                            <a href="{{ route('itorero.show', $song->itorero->slug) }}" class="text-green-500 hover:text-green-400 font-semibold transition-colors">
-                                {{ $song->itorero->ItoreroName }}
-                            </a>
-                        @endif
+                        <a href="{{ $song->artist ? route('artists.show', $song->artist->slug) : ($song->orchestra ? route('orchestre.show', $song->orchestra->slug) : route('itorero.show', $song->itorero->slug)) }}" class="hover:underline">
+                            {{ $song->artist ? $song->artist->StageName : ($song->orchestra ? $song->orchestra->OrchestreName : $song->itorero->ItoreroName) }}
+                        </a>
                     </p>
                 </div>
                 @endif
 
-                <!-- Metadata -->
-                <div class="flex flex-wrap gap-8 mb-6 text-white">
-                    <div>
-                        <p class="text-xs text-zinc-400 mb-1">Year</p>
-                        <p class="font-semibold">{{ $song->created_at ? $song->created_at->format('Y') : 'N/A' }}</p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-zinc-400 mb-1">Duration</p>
-                        <p class="font-semibold" id="song-duration">--:--</p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-zinc-400 mb-1">Plays</p>
-                        <p class="font-semibold">{{ number_format($song->PlayCount ?? 0) }}</p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-zinc-400 mb-1">Downloads</p>
-                        <p class="font-semibold">{{ number_format($song->DownloadCount ?? 0) }}</p>
-                    </div>
+                <div class="flex items-center gap-2 text-sm text-zinc-300">
+                    <span>{{ number_format($song->PlayCount ?? 0) }} plays</span>
+                    <span>•</span>
+                    <span id="song-duration">--:--</span>
                 </div>
-
-                <!-- Action Buttons -->
-                <div class="flex flex-wrap gap-4 mb-8">
-                    @php
-                        $isFavorited = false;
-                        if (Auth::check()) {
-                            // Check if this specific song is favorited
-                            // Must have FavoriteType = 'Song' or FavoriteType is NULL (legacy)
-                            // And (FavoriteID = song ID OR IndirimboID = song ID for legacy compatibility)
-                            // This ensures we only match actual song favorites, not orchestra/playlist favorites
-                            $isFavorited = \App\Models\Favorite::where('UserID', Auth::id())
-                                ->where(function($query) use ($song) {
-                                    $query->where(function($q) use ($song) {
-                                        // New polymorphic format: FavoriteType = 'Song' and FavoriteID = song ID
-                                        $q->where('FavoriteType', 'Song')
-                                          ->where('FavoriteID', $song->IndirimboID);
-                                    })->orWhere(function($q) use ($song) {
-                                        // Legacy format: FavoriteType is NULL and IndirimboID = song ID
-                                        $q->whereNull('FavoriteType')
-                                          ->where('IndirimboID', $song->IndirimboID);
-                                    });
-                                })
-                                ->exists();
-                        }
-                    @endphp
-                    <x-like-button 
-                        entity-type="song" 
-                        entity-id="{{ $song->IndirimboID }}" 
-                        :is-liked="$isFavorited"
-                    />
-                    <x-download-button song-id="{{ $song->IndirimboID }}" />
-                    <x-share-button :title="$song->IndirimboName" />
-                </div>
-
             </div>
         </div>
 
-        <!-- Hidden Audio Player for duration detection -->
-        @if($song->IndirimboUrl)
-        <audio 
-            id="song-audio-player" 
-            preload="metadata"
-            style="display: none;"
-        >
-            <source src="{{ route('indirimbo.audio', $song->IndirimboID) }}" type="audio/mpeg">
-        </audio>
-        @endif
+        <!-- Play Button and Actions -->
+        <div class="flex items-center gap-4 mb-8">
+            <button 
+                onclick="playCurrentSong()"
+                class="w-14 h-14 bg-[#1db954] hover:bg-[#1ed760] rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-all"
+            >
+                <svg class="w-7 h-7 text-black ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+            </button>
+            
+            @auth
+            @php
+                $isFavorited = false;
+                if (Auth::check()) {
+                    $isFavorited = \App\Models\Favorite::where('UserID', Auth::id())
+                        ->where(function($query) use ($song) {
+                            $query->where(function($q) use ($song) {
+                                $q->where('FavoriteType', 'Song')
+                                  ->where('FavoriteID', $song->IndirimboID);
+                            })->orWhere(function($q) use ($song) {
+                                $q->whereNull('FavoriteType')
+                                  ->where('FavoriteID', $song->IndirimboID);
+                            });
+                        })
+                        ->exists();
+                }
+            @endphp
+            <x-like-button 
+                entity-type="song" 
+                entity-id="{{ $song->IndirimboID }}" 
+                :is-liked="$isFavorited"
+            />
+            @endauth
+        </div>
 
-        <!-- About This Song Section -->
-        <div class="bg-zinc-900 rounded-lg p-8 mb-8">
-            <h2 class="text-2xl font-bold text-white mb-6">About This Song</h2>
-            @if(!empty($song->Description))
-            <div class="prose prose-invert max-w-none">
-                <div class="text-zinc-300 leading-relaxed text-lg">
-                    {!! $song->Description !!}
-                </div>
-            </div>
-            @else
-            <div class="prose prose-invert max-w-none">
-                <p class="text-zinc-400 leading-relaxed text-lg italic">
-                    No description available for this song.
-                </p>
+        <!-- Song Details -->
+        <div class="bg-zinc-900/50 rounded-lg p-6 mb-8">
+            <h2 class="text-xl font-bold text-white mb-4">About this song</h2>
+            
+            @if($song->Description)
+            <div class="mb-6">
+                <h3 class="text-sm font-semibold text-zinc-400 mb-2">Description</h3>
+                <div class="text-zinc-300 whitespace-pre-wrap">{{ strip_tags($song->Description) }}</div>
             </div>
             @endif
-        </div>
 
-        <!-- Lyrics Section -->
-        <div class="bg-zinc-900 rounded-lg p-8 mb-8">
-            <h2 class="text-2xl font-bold text-white mb-6">Lyrics</h2>
             @if($song->Lyrics)
-            <div class="max-h-96 overflow-y-auto pr-4">
-                <div class="text-zinc-300 leading-relaxed text-lg">
-                    {!! strip_tags($song->Lyrics, '<br><p><div><span><strong><em><b><i><u>') !!}
-                </div>
-            </div>
-            @else
-            <div class="text-center py-12">
-                <p class="text-zinc-400 text-lg">Iyi ndirimbo ntamagambo igite.</p>
-                <p class="text-zinc-500 text-sm mt-2">This song has no lyrics available.</p>
+            <div class="mb-6">
+                <h3 class="text-sm font-semibold text-zinc-400 mb-2">Lyrics</h3>
+                <div class="text-zinc-300 whitespace-pre-wrap">{{ strip_tags($song->Lyrics) }}</div>
             </div>
             @endif
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                    <p class="text-zinc-400 mb-1">Year</p>
+                    <p class="text-white">{{ $song->created_at ? $song->created_at->format('Y') : 'N/A' }}</p>
+                </div>
+                <div>
+                    <p class="text-zinc-400 mb-1">Plays</p>
+                    <p class="text-white">{{ number_format($song->PlayCount ?? 0) }}</p>
+                </div>
+                <div>
+                    <p class="text-zinc-400 mb-1">Downloads</p>
+                    <p class="text-white">{{ number_format($song->DownloadCount ?? 0) }}</p>
+                </div>
+                <div>
+                    <p class="text-zinc-400 mb-1">Duration</p>
+                    <p class="text-white" id="song-duration-footer">--:--</p>
+                </div>
+            </div>
         </div>
 
-        <!-- Related Playlists -->
-        @if($song->playlists && $song->playlists->count() > 0)
+        <!-- Related Songs -->
+        @if($song->artist && $song->artist->songs->count() > 1)
         <div class="mb-8">
-            <h2 class="text-2xl font-bold text-white mb-6">In Playlists</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                @foreach($song->playlists as $playlist)
-                <a href="{{ route('playlists.show', $playlist->slug) }}" class="bg-zinc-800 rounded-lg p-4 hover:bg-zinc-700 transition-colors block">
-                    <div class="flex items-center gap-4">
-                        <img 
-                            src="{{ \App\Helpers\ImageHelper::getImageUrl($playlist->ProfilePicture) }}" 
-                            alt="{{ $playlist->PlaylistName }}"
-                            class="w-16 h-16 rounded object-cover"
-                        />
-                        <div class="flex-1">
-                            <h3 class="font-semibold text-white mb-1">{{ $playlist->PlaylistName }}</h3>
-                            <p class="text-sm text-zinc-400">{{ $playlist->songs->count() }} songs</p>
-                        </div>
+            <h2 class="text-2xl font-bold text-white mb-6">More by {{ $song->artist->StageName }}</h2>
+            <div class="overflow-x-auto scrollbar-hide -mx-6 px-6">
+                <div class="flex gap-4" style="width: max-content;">
+                    @foreach($song->artist->songs->where('IndirimboID', '!=', $song->IndirimboID)->take(10) as $relatedSong)
+                    <div class="group flex-shrink-0 w-[180px]">
+                        <a href="{{ route('indirimbo.show', [$relatedSong->slug, $relatedSong->UUID]) }}" class="block p-4 bg-zinc-900/50 hover:bg-zinc-800 rounded-lg transition-all duration-200 cursor-pointer">
+                            <div class="relative mb-4">
+                                <img 
+                                    src="{{ \App\Helpers\ImageHelper::getImageUrl($relatedSong->ProfilePicture) }}" 
+                                    alt="{{ $relatedSong->IndirimboName }}"
+                                    class="w-full aspect-square object-cover rounded-lg shadow-lg"
+                                />
+                                <button 
+                                    onclick="event.preventDefault(); playSong('{{ $relatedSong->UUID }}', '{{ \App\Helpers\ImageHelper::getImageUrl($relatedSong->ProfilePicture) }}', '{{ addslashes($relatedSong->IndirimboName) }}', '{{ addslashes($song->artist->StageName) }}', '{{ route('indirimbo.audio', $relatedSong->IndirimboID) }}', {{ $relatedSong->IndirimboID }});"
+                                    class="absolute bottom-2 right-2 w-12 h-12 bg-[#1db954] rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg hover:scale-110 z-10"
+                                >
+                                    <svg class="w-6 h-6 text-black ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <h3 class="font-semibold text-white mb-1 truncate text-sm">{{ $relatedSong->IndirimboName }}</h3>
+                            <p class="text-xs text-zinc-400 truncate">{{ $song->artist->StageName }}</p>
+                        </a>
                     </div>
-                </a>
-                @endforeach
+                    @endforeach
+                </div>
             </div>
         </div>
         @endif
@@ -192,274 +148,57 @@
 </div>
 
 <script>
-    let isLiked = {{ $isFavorited ? 'true' : 'false' }};
-    let isPlaying = false;
+function playCurrentSong() {
+    const audioUrl = '{{ route('indirimbo.audio', $song->IndirimboID) }}';
+    const imageUrl = '{{ \App\Helpers\ImageHelper::getImageUrl($song->ProfilePicture) }}';
+    const title = '{{ addslashes($song->IndirimboName) }}';
+    const artist = '{{ addslashes($song->owner() ? $song->owner()->name : 'Unknown') }}';
+    
+    window.currentSongId = {{ $song->IndirimboID }};
+    playSong('{{ $song->UUID }}', imageUrl, title, artist, audioUrl);
+}
 
-    // Initialize bottom player and auto-play when page loads
-    document.addEventListener('DOMContentLoaded', function() {
-        const audioPlayer = document.getElementById('song-audio-player');
-        const audioUrl = '{{ $song->IndirimboUrl ? route("indirimbo.audio", $song->IndirimboID) : "" }}';
-        const musicPlayer = document.getElementById('music-player');
-        
-        // Show the music player immediately
-        if (musicPlayer) {
-            musicPlayer.classList.remove('hidden');
-        }
-        
-        // Update bottom player with song info
-        updateBottomPlayer();
-        
-        // Wait a bit for the player to be initialized, then auto-play
-        setTimeout(function() {
-            const player = document.getElementById('bottom-audio-player');
-            
-            if (player && audioUrl) {
-                // Re-initialize player events to ensure they're attached
-                if (typeof window.initializePlayerEvents === 'function') {
-                    window.initializePlayerEvents();
-                }
-                
-                // Get fresh reference after re-initialization
-                const freshPlayer = document.getElementById('bottom-audio-player');
-                if (!freshPlayer) return;
-                
-                // Ensure audio source is set
-                if (freshPlayer.src !== audioUrl) {
-                    freshPlayer.src = audioUrl;
-                }
-                
-                // Add error handler
-                freshPlayer.addEventListener('error', function(e) {
-                    console.error('Audio load error:', e);
-                    console.error('Audio URL:', audioUrl);
-                    console.error('Player src:', freshPlayer.src);
-                }, { once: true });
-                
-                // Load the audio
-                freshPlayer.load();
-                
-                // Wait for audio to be ready, then play
-                const playAudio = function() {
-                    if (freshPlayer.readyState >= 2) {
-                        freshPlayer.play().then(function() {
-                            console.log('Auto-play started successfully');
-                            // Update play/pause button state
-                            if (typeof window.isPlaying !== 'undefined') {
-                                window.isPlaying = true;
-                                const playPauseBtn = document.getElementById('play-pause-btn');
-                                const playIcon = document.getElementById('play-icon');
-                                const pauseIcon = document.getElementById('pause-icon');
-                                if (playIcon) playIcon.classList.add('hidden');
-                                if (pauseIcon) pauseIcon.classList.remove('hidden');
-                            }
-                        }).catch(function(error) {
-                            console.log('Auto-play prevented (browser policy):', error);
-                            // User will need to click play manually
-                        });
-                    }
-                };
-                
-                // Try to play immediately if ready, otherwise wait for canplay/loadeddata
-                if (freshPlayer.readyState >= 2) {
-                    playAudio();
-                } else {
-                    freshPlayer.addEventListener('canplay', playAudio, { once: true });
-                    freshPlayer.addEventListener('loadeddata', playAudio, { once: true });
-                }
-            }
-        }, 500); // Increased delay to ensure player is fully initialized
-        
-        // Get duration from hidden player if available
-        if (audioPlayer) {
-            audioPlayer.addEventListener('loadedmetadata', function() {
-                const duration = audioPlayer.duration;
-                if (duration && !isNaN(duration)) {
-                    const minutes = Math.floor(duration / 60);
-                    const seconds = Math.floor(duration % 60);
-                    const durationText = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
-                    const durationEl = document.getElementById('song-duration');
-                    if (durationEl) {
-                        durationEl.textContent = durationText;
-                    }
-                }
-            });
+function playSong(uuid, imageUrl, title, artist, audioUrl) {
+    const player = document.getElementById('bottom-audio-player');
+    const playerImage = document.getElementById('player-image');
+    const playerTitle = document.getElementById('player-title');
+    const playerArtist = document.getElementById('player-artist');
+    const musicPlayer = document.getElementById('music-player');
+    
+    if (player && audioUrl) {
+        player.src = audioUrl;
+        if (playerImage) playerImage.src = imageUrl || '/placeholder.svg';
+        if (playerTitle) playerTitle.textContent = title;
+        if (playerArtist) playerArtist.textContent = artist;
+        if (musicPlayer) musicPlayer.classList.remove('hidden');
+        player.play().catch(e => console.error('Play error:', e));
+    }
+}
+
+// Update duration when audio loads
+document.addEventListener('DOMContentLoaded', function() {
+    const audio = document.createElement('audio');
+    audio.src = '{{ route('indirimbo.audio', $song->IndirimboID) }}';
+    audio.addEventListener('loadedmetadata', function() {
+        const duration = audio.duration;
+        if (duration && !isNaN(duration)) {
+            const minutes = Math.floor(duration / 60);
+            const seconds = Math.floor(duration % 60);
+            const durationText = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+            document.getElementById('song-duration').textContent = durationText;
+            document.getElementById('song-duration-footer').textContent = durationText;
         }
     });
-
-
-    function toggleLike() {
-        @guest
-        // Redirect to login if not authenticated
-        window.location.href = '{{ route("login") }}';
-        return;
-        @endguest
-
-        const likeBtn = document.getElementById('like-btn');
-        const svg = likeBtn.querySelector('svg');
-        const songId = {{ $song->IndirimboID }};
-        
-        // Send AJAX request to toggle favorite
-        fetch(`/favorites/${songId}/toggle`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'Accept': 'application/json'
-            },
-            credentials: 'same-origin',
-            redirect: 'manual' // Don't follow redirects automatically
-        })
-        .then(async response => {
-            // Handle redirects (302, 301, etc.)
-            if (response.type === 'opaqueredirect' || response.status === 302 || response.status === 301) {
-                if (typeof showErrorNotification === 'function') {
-                    showErrorNotification('Please log in to favorite items.');
-                }
-                setTimeout(() => {
-                    window.location.href = '{{ route("login") }}';
-                }, 1500);
-                return null;
-            }
-            
-            // Handle authentication errors
-            if (response.status === 401) {
-                let message = 'Please log in to favorite items.';
-                try {
-                    const errorData = await response.json();
-                    if (errorData.message) {
-                        message = errorData.message;
-                    }
-                } catch (e) {
-                    // Ignore JSON parse errors
-                }
-                if (typeof showErrorNotification === 'function') {
-                    showErrorNotification(message);
-                }
-                setTimeout(() => {
-                    window.location.href = '{{ route("login") }}';
-                }, 1500);
-                return null;
-            }
-            
-            // Handle email verification errors
-            if (response.status === 403) {
-                let message = 'Please verify your email address.';
-                let redirectUrl = '{{ route("verification.notice") }}';
-                try {
-                    const errorData = await response.json();
-                    if (errorData.message) {
-                        message = errorData.message;
-                    }
-                    if (errorData.redirect) {
-                        redirectUrl = errorData.redirect;
-                    }
-                } catch (e) {
-                    // Ignore JSON parse errors
-                }
-                if (typeof showErrorNotification === 'function') {
-                    showErrorNotification(message);
-                }
-                setTimeout(() => {
-                    window.location.href = redirectUrl;
-                }, 1500);
-                return null;
-            }
-            
-            // Check if response is JSON
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                // If not JSON, likely a redirect or HTML error page
-                if (typeof showErrorNotification === 'function') {
-                    showErrorNotification('Please log in to favorite items.');
-                }
-                setTimeout(() => {
-                    window.location.href = '{{ route("login") }}';
-                }, 1500);
-                return null;
-            }
-            
-            if (!response.ok) {
-                // Try to get error message from response
-                try {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || errorData.error || 'An error occurred');
-                } catch (e) {
-                    if (e.message && e.message !== 'Unexpected token < in JSON at position 0') {
-                        throw e;
-                    }
-                    throw new Error('An error occurred. Please try again.');
-                }
-            }
-            
-            return response.json();
-        })
-        .then(data => {
-            if (!data) return; // Already handled redirect
-            
-            if (data.success) {
-                isLiked = data.isFavorited;
-                
-                if (isLiked) {
-                    likeBtn.classList.add('bg-pink-500', 'hover:bg-pink-600');
-                    likeBtn.classList.remove('bg-zinc-800', 'hover:bg-zinc-700');
-                    svg.setAttribute('fill', 'currentColor');
-                } else {
-                    likeBtn.classList.remove('bg-pink-500', 'hover:bg-pink-600');
-                    likeBtn.classList.add('bg-zinc-800', 'hover:bg-zinc-700');
-                    svg.setAttribute('fill', 'none');
-                }
-            } else if (data.error) {
-                if (typeof showErrorNotification === 'function') {
-                    showErrorNotification(data.message || data.error || 'An error occurred. Please try again.');
-                }
-            }
-        })
-        .catch(error => {
-            console.error('Error toggling favorite:', error);
-            // Show user-friendly error message
-            const message = error.message || 'An error occurred. Please try again.';
-            if (typeof showErrorNotification === 'function') {
-                showErrorNotification(message);
-            }
-            if (message.includes('log in') || message.includes('Unauthorized') || message.includes('login')) {
-                setTimeout(() => {
-                    window.location.href = '{{ route("login") }}';
-                }, 1500);
-            }
-        });
-    }
-
-    // downloadSong function is now in download-button component
-    function downloadSong() {
-        // Use the download route which tracks downloads
-        const downloadUrl = '{{ route("indirimbo.download", $song->IndirimboID) }}';
-        window.location.href = downloadUrl;
-    }
-
-
-    function updateBottomPlayer() {
-        // Update the bottom music player with current song info
-        const songTitle = '{{ $song->IndirimboName }}';
-        const artistName = @if($song->artist)
-                            '{{ $song->artist->StageName }}'
-                        @elseif($song->orchestra)
-                            '{{ $song->orchestra->OrchestreName }}'
-                        @elseif($song->itorero)
-                            '{{ $song->itorero->ItoreroName }}'
-                        @else
-                            'Unknown Artist'
-                        @endif;
-        const songImage = '{{ \App\Helpers\ImageHelper::getImageUrl($song->ProfilePicture) }}';
-
-        // Update bottom player elements if they exist
-        const playerImage = document.getElementById('player-image');
-        const playerTitle = document.getElementById('player-title');
-        const playerArtist = document.getElementById('player-artist');
-
-        if (playerImage) playerImage.src = songImage;
-        if (playerTitle) playerTitle.textContent = songTitle;
-        if (playerArtist) playerArtist.textContent = artistName;
-    }
+});
 </script>
-@endsection
 
+<style>
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+</style>
+@endsection
