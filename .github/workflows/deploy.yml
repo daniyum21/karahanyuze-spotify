@@ -188,37 +188,52 @@ jobs:
                 private/karahanyuze-spotify/public/ public_html/iwacu/
               echo "✅ Public files copied to public_html/iwacu (other domains preserved)"
               
-              # Ensure iwacu/.htaccess has standard Laravel rules (not the root .htaccess)
-              echo "🔧 Ensuring iwacu/.htaccess has standard Laravel rules..."
+              # Ensure iwacu/.htaccess has secure standard Laravel rules
+              echo "🔧 Ensuring iwacu/.htaccess has secure standard Laravel rules..."
               cd ~/public_html/iwacu
-              # Create standard Laravel .htaccess for iwacu subdirectory
-              printf '%s\n' \
-                '<IfModule mod_rewrite.c>' \
-                '    <IfModule mod_negotiation.c>' \
-                '        Options -MultiViews -Indexes' \
-                '    </IfModule>' \
-                '' \
-                '    RewriteEngine On' \
-                '' \
-                '    # Handle Authorization Header' \
-                '    RewriteCond %{HTTP:Authorization} .' \
-                '    RewriteRule .* - [E=HTTP_AUTHORIZATION:%%{HTTP:Authorization}]' \
-                '' \
-                '    # Handle X-XSRF-Token Header' \
-                '    RewriteCond %%{HTTP:x-xsrf-token} .' \
-                '    RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%%{HTTP:X-XSRF-Token}]' \
-                '' \
-                '    # Redirect Trailing Slashes If Not A Folder...' \
-                '    RewriteCond %%{REQUEST_FILENAME} !-d' \
-                '    RewriteCond %%{REQUEST_URI} (.+)/$' \
-                '    RewriteRule ^ %%1 [L,R=301]' \
-                '' \
-                '    # Send Requests To Front Controller...' \
-                '    RewriteCond %%{REQUEST_FILENAME} !-d' \
-                '    RewriteCond %%{REQUEST_FILENAME} !-f' \
-                '    RewriteRule ^ index.php [L]' \
-                '</IfModule>' > .htaccess
-              echo "✅ iwacu/.htaccess updated with standard Laravel rules"
+              # Backup existing .htaccess if it exists (may have security issues)
+              if [ -f ".htaccess" ]; then
+                cp .htaccess .htaccess.backup-$(date +%Y%m%d-%H%M%S) 2>/dev/null || true
+              fi
+              # Create secure standard Laravel .htaccess for iwacu subdirectory
+              cat > .htaccess << 'HTACCESS_EOF'
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # Disable directory browsing
+    Options -Indexes
+
+    # Prevent access to hidden files and parent directories
+    RewriteCond %{REQUEST_URI} "\.\." [OR]
+    RewriteCond %{REQUEST_URI} "\.\./" [OR]
+    RewriteCond %{REQUEST_URI} "/home" [OR]
+    RewriteCond %{REQUEST_URI} "/private"
+    RewriteRule .* - [F,L]
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Handle X-XSRF-Token Header
+    RewriteCond %{HTTP:x-xsrf-token} .
+    RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
+
+    # Redirect Trailing Slashes If Not A Folder...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Send Requests To Front Controller...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
+HTACCESS_EOF
+              echo "✅ iwacu/.htaccess updated with secure standard Laravel rules"
             else
               echo "⚠️  Warning: public folder not found in package"
             fi
@@ -522,37 +537,52 @@ jobs:
                 private/karahanyuze-spotify/public/ public_html/iwacu/
               echo "✅ Public files copied to public_html/iwacu (other domains preserved)"
               
-              # Ensure iwacu/.htaccess has standard Laravel rules (not the root .htaccess)
-              echo "🔧 Ensuring iwacu/.htaccess has standard Laravel rules..."
+              # Ensure iwacu/.htaccess has secure standard Laravel rules
+              echo "🔧 Ensuring iwacu/.htaccess has secure standard Laravel rules..."
               cd ~/public_html/iwacu
-              # Create standard Laravel .htaccess for iwacu subdirectory
-              printf '%s\n' \
-                '<IfModule mod_rewrite.c>' \
-                '    <IfModule mod_negotiation.c>' \
-                '        Options -MultiViews -Indexes' \
-                '    </IfModule>' \
-                '' \
-                '    RewriteEngine On' \
-                '' \
-                '    # Handle Authorization Header' \
-                '    RewriteCond %{HTTP:Authorization} .' \
-                '    RewriteRule .* - [E=HTTP_AUTHORIZATION:%%{HTTP:Authorization}]' \
-                '' \
-                '    # Handle X-XSRF-Token Header' \
-                '    RewriteCond %%{HTTP:x-xsrf-token} .' \
-                '    RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%%{HTTP:X-XSRF-Token}]' \
-                '' \
-                '    # Redirect Trailing Slashes If Not A Folder...' \
-                '    RewriteCond %%{REQUEST_FILENAME} !-d' \
-                '    RewriteCond %%{REQUEST_URI} (.+)/$' \
-                '    RewriteRule ^ %%1 [L,R=301]' \
-                '' \
-                '    # Send Requests To Front Controller...' \
-                '    RewriteCond %%{REQUEST_FILENAME} !-d' \
-                '    RewriteCond %%{REQUEST_FILENAME} !-f' \
-                '    RewriteRule ^ index.php [L]' \
-                '</IfModule>' > .htaccess
-              echo "✅ iwacu/.htaccess updated with standard Laravel rules"
+              # Backup existing .htaccess if it exists (may have security issues)
+              if [ -f ".htaccess" ]; then
+                cp .htaccess .htaccess.backup-$(date +%Y%m%d-%H%M%S) 2>/dev/null || true
+              fi
+              # Create secure standard Laravel .htaccess for iwacu subdirectory
+              cat > .htaccess << 'HTACCESS_EOF'
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # Disable directory browsing
+    Options -Indexes
+
+    # Prevent access to hidden files and parent directories
+    RewriteCond %{REQUEST_URI} "\.\." [OR]
+    RewriteCond %{REQUEST_URI} "\.\./" [OR]
+    RewriteCond %{REQUEST_URI} "/home" [OR]
+    RewriteCond %{REQUEST_URI} "/private"
+    RewriteRule .* - [F,L]
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Handle X-XSRF-Token Header
+    RewriteCond %{HTTP:x-xsrf-token} .
+    RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
+
+    # Redirect Trailing Slashes If Not A Folder...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Send Requests To Front Controller...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
+HTACCESS_EOF
+              echo "✅ iwacu/.htaccess updated with secure standard Laravel rules"
             else
               echo "⚠️  Warning: public folder not found in package"
             fi
