@@ -191,17 +191,32 @@ jobs:
               echo "⚠️  Warning: public folder not found in package"
             fi
             
+            # IMPORTANT: Backup or remove old index.php in public_html (prevents serving old code)
+            echo "🔧 Checking for old index.php in public_html..."
+            cd ~/public_html
+            if [ -f "index.php" ] && [ ! -L "index.php" ]; then
+              echo "⚠️  Found old index.php in public_html - backing it up..."
+              mv index.php index.php.old-backup-$(date +%Y%m%d-%H%M%S) 2>/dev/null || mv index.php index.php.old-backup
+              echo "✅ Old index.php backed up - this prevents serving old code"
+            fi
+            
             # Update .htaccess in public_html to point to iwacu/index.php
             echo "🔧 Updating .htaccess in public_html to point to iwacu..."
-            cd ~/public_html
             if [ -f ".htaccess" ]; then
               # Backup original
-              cp .htaccess .htaccess.backup
+              cp .htaccess .htaccess.backup-$(date +%Y%m%d-%H%M%S) 2>/dev/null || cp .htaccess .htaccess.backup
               
-              # Update RewriteRule to point to iwacu/index.php
-              sed -i "s|RewriteRule ^ index.php \[L\]|RewriteRule ^ iwacu/index.php [L]|g" .htaccess
-              
-              echo "✅ .htaccess updated to point to iwacu/index.php"
+              # Copy new .htaccess from iwacu (which has the correct rules)
+              if [ -f "iwacu/.htaccess" ]; then
+                echo "📋 Copying .htaccess from iwacu to public_html..."
+                cp iwacu/.htaccess .htaccess
+                echo "✅ .htaccess updated from iwacu"
+              else
+                # Fallback: update manually
+                echo "📝 Updating .htaccess manually..."
+                sed -i "s|RewriteRule ^ index.php \[L\]|RewriteRule ^ iwacu/index.php [L]|g" .htaccess || true
+                echo "✅ .htaccess updated manually"
+              fi
             else
               echo "⚠️  Warning: .htaccess not found in public_html"
             fi
@@ -465,17 +480,32 @@ jobs:
               echo "⚠️  Warning: public folder not found in package"
             fi
             
+            # IMPORTANT: Backup or remove old index.php in public_html (prevents serving old code)
+            echo "🔧 Checking for old index.php in public_html..."
+            cd ~/public_html
+            if [ -f "index.php" ] && [ ! -L "index.php" ]; then
+              echo "⚠️  Found old index.php in public_html - backing it up..."
+              mv index.php index.php.old-backup-$(date +%Y%m%d-%H%M%S) 2>/dev/null || mv index.php index.php.old-backup
+              echo "✅ Old index.php backed up - this prevents serving old code"
+            fi
+            
             # Update .htaccess in public_html to point to iwacu/index.php
             echo "🔧 Updating .htaccess in public_html to point to iwacu..."
-            cd ~/public_html
             if [ -f ".htaccess" ]; then
               # Backup original
-              cp .htaccess .htaccess.backup
+              cp .htaccess .htaccess.backup-$(date +%Y%m%d-%H%M%S) 2>/dev/null || cp .htaccess .htaccess.backup
               
-              # Update RewriteRule to point to iwacu/index.php
-              sed -i "s|RewriteRule ^ index.php \[L\]|RewriteRule ^ iwacu/index.php [L]|g" .htaccess
-              
-              echo "✅ .htaccess updated to point to iwacu/index.php"
+              # Copy new .htaccess from iwacu (which has the correct rules)
+              if [ -f "iwacu/.htaccess" ]; then
+                echo "📋 Copying .htaccess from iwacu to public_html..."
+                cp iwacu/.htaccess .htaccess
+                echo "✅ .htaccess updated from iwacu"
+              else
+                # Fallback: update manually
+                echo "📝 Updating .htaccess manually..."
+                sed -i "s|RewriteRule ^ index.php \[L\]|RewriteRule ^ iwacu/index.php [L]|g" .htaccess || true
+                echo "✅ .htaccess updated manually"
+              fi
             else
               echo "⚠️  Warning: .htaccess not found in public_html"
             fi
