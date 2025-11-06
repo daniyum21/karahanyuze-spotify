@@ -21,13 +21,6 @@
 
     RewriteEngine On
 
-    # SECURITY: Prevent path exposure and directory traversal
-    RewriteCond %{REQUEST_URI} "\.\." [OR]
-    RewriteCond %{REQUEST_URI} "\.\./" [OR]
-    RewriteCond %{REQUEST_URI} "/home" [OR]
-    RewriteCond %{REQUEST_URI} "/private"
-    RewriteRule .* - [F,L]
-
     # Skip ALL Laravel rules if NOT exactly karahanyuze.com or www.karahanyuze.com
     # This allows other domains/subdomains (indirimbo.com, erwanda.com, iwacu.org, etc.) 
     # mapped to subdirectories (public_html/foldername) to work
