@@ -234,8 +234,15 @@ jobs:
                 '    Options -Indexes' \
                 '' \
                 '    # IMPORTANT: Allow direct access to build directory and assets' \
-                '    # This prevents Laravel rewrite rules from blocking static assets' \
-                '    RewriteCond %%{REQUEST_URI} ^/build/' \
+                '    # This must come BEFORE other rewrite rules' \
+                '    # Match both /build/ and build/ (for subdirectory)' \
+                '    RewriteCond %%{REQUEST_URI} ^/build/ [OR]' \
+                '    RewriteCond %%{REQUEST_URI} ^build/' \
+                '    RewriteRule ^ - [L]' \
+                '' \
+                '    # Allow direct access to static files (svg, png, jpg, jpeg, gif, ico, etc.)' \
+                '    RewriteCond %%{REQUEST_FILENAME} -f' \
+                '    RewriteCond %%{REQUEST_URI} \.(svg|png|jpg|jpeg|gif|ico|css|js|woff|woff2|ttf|eot)$ [NC]' \
                 '    RewriteRule ^ - [L]' \
                 '' \
                 '    # Prevent access to hidden files and parent directories' \
@@ -607,8 +614,15 @@ jobs:
                 '    Options -Indexes' \
                 '' \
                 '    # IMPORTANT: Allow direct access to build directory and assets' \
-                '    # This prevents Laravel rewrite rules from blocking static assets' \
-                '    RewriteCond %%{REQUEST_URI} ^/build/' \
+                '    # This must come BEFORE other rewrite rules' \
+                '    # Match both /build/ and build/ (for subdirectory)' \
+                '    RewriteCond %%{REQUEST_URI} ^/build/ [OR]' \
+                '    RewriteCond %%{REQUEST_URI} ^build/' \
+                '    RewriteRule ^ - [L]' \
+                '' \
+                '    # Allow direct access to static files (svg, png, jpg, jpeg, gif, ico, etc.)' \
+                '    RewriteCond %%{REQUEST_FILENAME} -f' \
+                '    RewriteCond %%{REQUEST_URI} \.(svg|png|jpg|jpeg|gif|ico|css|js|woff|woff2|ttf|eot)$ [NC]' \
                 '    RewriteRule ^ - [L]' \
                 '' \
                 '    # Prevent access to hidden files and parent directories' \
