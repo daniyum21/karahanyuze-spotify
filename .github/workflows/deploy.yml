@@ -210,6 +210,13 @@ jobs:
             # Set up environment
             cd ~/private/karahanyuze-spotify
             
+            # Clear caches FIRST before checking .env (important for fresh config)
+            echo "🧹 Clearing all caches before environment setup..."
+            php artisan config:clear || true
+            php artisan cache:clear || true
+            php artisan view:clear || true
+            php artisan route:clear || true
+            
             # Preserve existing .env file
             if [ -f .env ]; then
               echo "✅ Using existing .env file"
@@ -232,6 +239,10 @@ jobs:
                   echo "✅ DB_CONNECTION is correctly set to mysql"
                 fi
               fi
+              
+              # Clear config cache again after .env changes
+              echo "🧹 Clearing config cache after .env changes..."
+              php artisan config:clear || true
               
               # Check if APP_KEY is missing or empty, if so generate it
               APP_KEY_VALUE=$(grep "^APP_KEY=" .env 2>/dev/null | cut -d '=' -f2- | tr -d ' ')
