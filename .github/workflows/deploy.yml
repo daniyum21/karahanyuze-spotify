@@ -237,31 +237,9 @@ jobs:
               echo "⚠️  Warning: public folder not found in package"
             fi
             
-            # Keep old index.php in public_html for other domains/legacy support
-            # We only redirect karahanyuze.com to iwacu, other domains still use root
-            echo "✅ Keeping old index.php in public_html for other domains"
-            
-            # Update .htaccess in public_html to exclude iwacu from Laravel rules
-            echo "🔧 Updating .htaccess in public_html to exclude iwacu..."
-            cd ~/public_html
-            if [ -f ".htaccess" ]; then
-              # Backup original
-              cp .htaccess .htaccess.backup-$(date +%Y%m%d-%H%M%S) 2>/dev/null || cp .htaccess .htaccess.backup
-              
-              # Copy new .htaccess from iwacu (which has the correct rules)
-              if [ -f "iwacu/.htaccess" ]; then
-                echo "📋 Copying .htaccess from iwacu to public_html..."
-                cp iwacu/.htaccess .htaccess
-                echo "✅ .htaccess updated from iwacu"
-              else
-                # Fallback: update manually - exclude iwacu from Laravel rules
-                echo "📝 Updating .htaccess manually..."
-                sed -i 's|RewriteRule ^ index.php \[L\]|RewriteCond %{REQUEST_URI} !^/iwacu/\nRewriteRule ^ index.php [L]|g' .htaccess || true
-                echo "✅ .htaccess updated manually"
-              fi
-            else
-              echo "⚠️  Warning: .htaccess not found in public_html"
-            fi
+            # Don't modify public_html/.htaccess or public_html/index.php
+            # They should remain unchanged for other domains
+            echo "✅ Leaving public_html/.htaccess and public_html/index.php unchanged for other domains"
             
             # Update index.php in iwacu to point to karahanyuze-spotify
             echo "🔧 Updating index.php in iwacu to point to karahanyuze-spotify..."
@@ -279,22 +257,8 @@ jobs:
               echo "⚠️  Warning: index.php not found in iwacu"
             fi
             
-            # Ensure public_html/index.php points to karahanyuze11 (old code)
-            echo "🔧 Ensuring public_html/index.php points to karahanyuze11..."
-            cd ~/public_html
-            if [ -f "index.php" ]; then
-              # Backup original
-              cp index.php index.php.backup-before-fix 2>/dev/null || true
-              
-              # Update paths to point to private/karahanyuze11 directory (old code)
-              sed -i "s|__DIR__.'/../vendor/autoload.php'|__DIR__.'/../private/karahanyuze11/vendor/autoload.php'|g" index.php
-              sed -i "s|__DIR__.'/../bootstrap/app.php'|__DIR__.'/../private/karahanyuze11/bootstrap/app.php'|g" index.php
-              sed -i "s|private/karahanyuze-spotify|private/karahanyuze11|g" index.php
-              
-              echo "✅ public_html/index.php updated to point to karahanyuze11"
-            else
-              echo "⚠️  Warning: index.php not found in public_html"
-            fi
+            # Don't modify public_html/index.php - it should stay as is for other domains
+            echo "✅ Leaving public_html/index.php unchanged for other domains"
             
             # Set up environment
             cd ~/private/karahanyuze-spotify
@@ -585,31 +549,9 @@ jobs:
               echo "⚠️  Warning: public folder not found in package"
             fi
             
-            # Keep old index.php in public_html for other domains/legacy support
-            # We only redirect karahanyuze.com to iwacu, other domains still use root
-            echo "✅ Keeping old index.php in public_html for other domains"
-            
-            # Update .htaccess in public_html to exclude iwacu from Laravel rules
-            echo "🔧 Updating .htaccess in public_html to exclude iwacu..."
-            cd ~/public_html
-            if [ -f ".htaccess" ]; then
-              # Backup original
-              cp .htaccess .htaccess.backup-$(date +%Y%m%d-%H%M%S) 2>/dev/null || cp .htaccess .htaccess.backup
-              
-              # Copy new .htaccess from iwacu (which has the correct rules)
-              if [ -f "iwacu/.htaccess" ]; then
-                echo "📋 Copying .htaccess from iwacu to public_html..."
-                cp iwacu/.htaccess .htaccess
-                echo "✅ .htaccess updated from iwacu"
-              else
-                # Fallback: update manually - exclude iwacu from Laravel rules
-                echo "📝 Updating .htaccess manually..."
-                sed -i 's|RewriteRule ^ index.php \[L\]|RewriteCond %{REQUEST_URI} !^/iwacu/\nRewriteRule ^ index.php [L]|g' .htaccess || true
-                echo "✅ .htaccess updated manually"
-              fi
-            else
-              echo "⚠️  Warning: .htaccess not found in public_html"
-            fi
+            # Don't modify public_html/.htaccess or public_html/index.php
+            # They should remain unchanged for other domains
+            echo "✅ Leaving public_html/.htaccess and public_html/index.php unchanged for other domains"
             
             # Update index.php in iwacu to point to karahanyuze-spotify
             echo "🔧 Updating index.php in iwacu to point to karahanyuze-spotify..."
@@ -627,22 +569,8 @@ jobs:
               echo "⚠️  Warning: index.php not found in iwacu"
             fi
             
-            # Ensure public_html/index.php points to karahanyuze11 (old code)
-            echo "🔧 Ensuring public_html/index.php points to karahanyuze11..."
-            cd ~/public_html
-            if [ -f "index.php" ]; then
-              # Backup original
-              cp index.php index.php.backup-before-fix 2>/dev/null || true
-              
-              # Update paths to point to private/karahanyuze11 directory (old code)
-              sed -i "s|__DIR__.'/../vendor/autoload.php'|__DIR__.'/../private/karahanyuze11/vendor/autoload.php'|g" index.php
-              sed -i "s|__DIR__.'/../bootstrap/app.php'|__DIR__.'/../private/karahanyuze11/bootstrap/app.php'|g" index.php
-              sed -i "s|private/karahanyuze-spotify|private/karahanyuze11|g" index.php
-              
-              echo "✅ public_html/index.php updated to point to karahanyuze11"
-            else
-              echo "⚠️  Warning: index.php not found in public_html"
-            fi
+            # Don't modify public_html/index.php - it should stay as is for other domains
+            echo "✅ Leaving public_html/index.php unchanged for other domains"
             
             # Set up environment
             cd ~/private/karahanyuze-spotify
