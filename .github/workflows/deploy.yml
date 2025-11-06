@@ -191,14 +191,9 @@ jobs:
               echo "⚠️  Warning: public folder not found in package"
             fi
             
-            # IMPORTANT: Backup or remove old index.php in public_html (prevents serving old code)
-            echo "🔧 Checking for old index.php in public_html..."
-            cd ~/public_html
-            if [ -f "index.php" ] && [ ! -L "index.php" ]; then
-              echo "⚠️  Found old index.php in public_html - backing it up..."
-              mv index.php index.php.old-backup-$(date +%Y%m%d-%H%M%S) 2>/dev/null || mv index.php index.php.old-backup
-              echo "✅ Old index.php backed up - this prevents serving old code"
-            fi
+            # Keep old index.php in public_html for other domains/legacy support
+            # We only redirect karahanyuze.com to iwacu, other domains still use root
+            echo "✅ Keeping old index.php in public_html for other domains"
             
             # Update .htaccess in public_html to point to iwacu/index.php
             echo "🔧 Updating .htaccess in public_html to point to iwacu..."
@@ -480,14 +475,9 @@ jobs:
               echo "⚠️  Warning: public folder not found in package"
             fi
             
-            # IMPORTANT: Backup or remove old index.php in public_html (prevents serving old code)
-            echo "🔧 Checking for old index.php in public_html..."
-            cd ~/public_html
-            if [ -f "index.php" ] && [ ! -L "index.php" ]; then
-              echo "⚠️  Found old index.php in public_html - backing it up..."
-              mv index.php index.php.old-backup-$(date +%Y%m%d-%H%M%S) 2>/dev/null || mv index.php index.php.old-backup
-              echo "✅ Old index.php backed up - this prevents serving old code"
-            fi
+            # Keep old index.php in public_html for other domains/legacy support
+            # We only redirect karahanyuze.com to iwacu, other domains still use root
+            echo "✅ Keeping old index.php in public_html for other domains"
             
             # Update .htaccess in public_html to point to iwacu/index.php
             echo "🔧 Updating .htaccess in public_html to point to iwacu..."
