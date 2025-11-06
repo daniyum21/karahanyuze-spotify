@@ -103,21 +103,36 @@ cd ~/private/karahanyuze11
 if [ -f ".env" ]; then
     echo "✅ .env file exists"
     
-    # Check APP_URL
+    # Check APP_URL - CRITICAL: This must be set correctly
     if grep -q "^APP_URL=" .env; then
-        APP_URL=$(grep "^APP_URL=" .env | cut -d '=' -f2-)
+        APP_URL=$(grep "^APP_URL=" .env | cut -d '=' -f2- | tr -d ' ' | tr -d '"' | tr -d "'")
         echo "📄 Current APP_URL: $APP_URL"
         
-        if [[ "$APP_URL" != *"karahanyuze.com"* ]]; then
-            echo "⚠️  APP_URL doesn't contain karahanyuze.com, fixing..."
+        # Check if APP_URL contains paths (which is wrong)
+        if [[ "$APP_URL" == *"/home"* ]] || [[ "$APP_URL" == *"public_html"* ]] || [[ "$APP_URL" != *"karahanyuze.com"* ]]; then
+            echo "❌ APP_URL is incorrect: $APP_URL"
+            echo "🔧 Fixing APP_URL..."
             sed -i "s|^APP_URL=.*|APP_URL=https://karahanyuze.com|g" .env
             echo "✅ APP_URL fixed to https://karahanyuze.com"
+        else
+            echo "✅ APP_URL looks correct: $APP_URL"
         fi
     else
         echo "⚠️  APP_URL not set, adding..."
         echo "" >> .env
         echo "APP_URL=https://karahanyuze.com" >> .env
         echo "✅ APP_URL added"
+    fi
+    
+    # Also check for any other URL-related config that might be wrong
+    if grep -q "^ASSET_URL=" .env; then
+        ASSET_URL=$(grep "^ASSET_URL=" .env | cut -d '=' -f2- | tr -d ' ' | tr -d '"' | tr -d "'")
+        if [[ "$ASSET_URL" == *"/home"* ]] || [[ "$ASSET_URL" == *"public_html"* ]]; then
+            echo "❌ ASSET_URL is incorrect: $ASSET_URL"
+            echo "🔧 Removing incorrect ASSET_URL..."
+            sed -i "/^ASSET_URL=/d" .env
+            echo "✅ ASSET_URL removed (will use APP_URL)"
+        fi
     fi
     
     # Clear Laravel config cache
