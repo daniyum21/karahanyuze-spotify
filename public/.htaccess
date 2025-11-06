@@ -46,23 +46,11 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # For karahanyuze.com - redirect to iwacu (new Spotify design)
+    # Send Requests To Front Controller...
     # Only apply to karahanyuze.com to avoid catching subdomain subdirectories
+    # Exclude iwacu/ from Laravel rules (allow direct access like indirimbo/)
     RewriteCond %{HTTP_HOST} ^(www\.)?karahanyuze\.com$ [NC]
     RewriteCond %{REQUEST_URI} !^/iwacu/
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^(.*)$ iwacu/$1 [L]
-    
-    # Handle requests that already go to iwacu
-    RewriteCond %{HTTP_HOST} ^(www\.)?karahanyuze\.com$ [NC]
-    RewriteCond %{REQUEST_URI} ^/iwacu/
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^iwacu/(.*)$ iwacu/index.php [L]
-    
-    # For other domains (not karahanyuze.com) - serve from root (old code)
-    RewriteCond %{HTTP_HOST} !^(www\.)?karahanyuze\.com$ [NC]
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
