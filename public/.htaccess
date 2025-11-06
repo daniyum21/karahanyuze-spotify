@@ -39,6 +39,16 @@
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
 
+    # Redirect root index.php and root requests to iwacu
+    RewriteCond %{HTTP_HOST} ^(www\.)?karahanyuze\.com$ [NC]
+    RewriteCond %{REQUEST_URI} ^/?$
+    RewriteRule ^(.*)$ iwacu/index.php [L]
+    
+    # Redirect root index.php file to iwacu
+    RewriteCond %{HTTP_HOST} ^(www\.)?karahanyuze\.com$ [NC]
+    RewriteCond %{REQUEST_URI} ^/index\.php$
+    RewriteRule ^(.*)$ iwacu/index.php [L]
+    
     # Redirect Trailing Slashes If Not A Folder...
     # Only apply to karahanyuze.com to avoid interfering with subdomain subdirectories
     RewriteCond %{HTTP_HOST} ^(www\.)?karahanyuze\.com$ [NC]
@@ -49,9 +59,9 @@
     # Send Requests To Front Controller...
     # Only apply to karahanyuze.com to avoid catching subdomain subdirectories
     RewriteCond %{HTTP_HOST} ^(www\.)?karahanyuze\.com$ [NC]
+    RewriteCond %{REQUEST_URI} !^/iwacu/
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_URI} !^/iwacu/
     RewriteRule ^(.*)$ iwacu/$1 [L]
     
     # Also handle requests that already go to iwacu
