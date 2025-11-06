@@ -233,6 +233,11 @@ jobs:
                 '    # Disable directory browsing' \
                 '    Options -Indexes' \
                 '' \
+                '    # IMPORTANT: Allow direct access to build directory and assets' \
+                '    # This prevents Laravel rewrite rules from blocking static assets' \
+                '    RewriteCond %%{REQUEST_URI} ^/build/' \
+                '    RewriteRule ^ - [L]' \
+                '' \
                 '    # Prevent access to hidden files and parent directories' \
                 '    RewriteCond %%{REQUEST_URI} "\.\." [OR]' \
                 '    RewriteCond %%{REQUEST_URI} "\.\./" [OR]' \
@@ -600,6 +605,11 @@ jobs:
                 '' \
                 '    # Disable directory browsing' \
                 '    Options -Indexes' \
+                '' \
+                '    # IMPORTANT: Allow direct access to build directory and assets' \
+                '    # This prevents Laravel rewrite rules from blocking static assets' \
+                '    RewriteCond %%{REQUEST_URI} ^/build/' \
+                '    RewriteRule ^ - [L]' \
                 '' \
                 '    # Prevent access to hidden files and parent directories' \
                 '    RewriteCond %%{REQUEST_URI} "\.\." [OR]' \
