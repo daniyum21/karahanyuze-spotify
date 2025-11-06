@@ -53,6 +53,11 @@ jobs:
       - name: 🔨 Build assets
         run: |
           npm run build
+          echo "✅ Assets built"
+          echo "📦 Build directory contents:"
+          ls -lah public/build/ || echo "⚠️  Build directory not found!"
+          echo "📦 Build manifest check:"
+          test -f public/build/manifest.json && echo "✅ manifest.json exists" || echo "❌ manifest.json not found!"
           
       - name: 🔨 Create deployment package
         run: |
@@ -181,12 +186,29 @@ jobs:
             echo "📂 Copying public files to public_html/iwacu (preserving other domains)..."
             mkdir -p public_html/iwacu
             if [ -d "private/karahanyuze-spotify/public" ]; then
+              # Verify build directory exists before copying
+              if [ -d "private/karahanyuze-spotify/public/build" ]; then
+                echo "✅ Build directory exists in package"
+                echo "   Build files: $(find private/karahanyuze-spotify/public/build -type f | wc -l)"
+              else
+                echo "⚠️  Build directory NOT found in package!"
+                echo "   This may cause CSS/JS assets to fail loading"
+              fi
+              
               # Use rsync without --delete to preserve existing files
               # Important: Use trailing slash on source to copy contents, not the folder itself
               # And ensure destination path is explicit to avoid overwriting parent directories
               rsync -av \
                 private/karahanyuze-spotify/public/ ~/public_html/iwacu/
               echo "✅ Public files copied to public_html/iwacu (other domains preserved)"
+              
+              # Verify build directory was copied
+              if [ -d ~/public_html/iwacu/build ]; then
+                echo "✅ Build directory exists in public_html/iwacu"
+                echo "   Build files: $(find ~/public_html/iwacu/build -type f | wc -l)"
+              else
+                echo "❌ Build directory NOT found in public_html/iwacu after copy!"
+              fi
               
               # Ensure iwacu/.htaccess has secure standard Laravel rules
               echo "🔧 Ensuring iwacu/.htaccess has secure standard Laravel rules..."
@@ -532,12 +554,29 @@ jobs:
             echo "📂 Copying public files to public_html/iwacu (preserving other domains)..."
             mkdir -p public_html/iwacu
             if [ -d "private/karahanyuze-spotify/public" ]; then
+              # Verify build directory exists before copying
+              if [ -d "private/karahanyuze-spotify/public/build" ]; then
+                echo "✅ Build directory exists in package"
+                echo "   Build files: $(find private/karahanyuze-spotify/public/build -type f | wc -l)"
+              else
+                echo "⚠️  Build directory NOT found in package!"
+                echo "   This may cause CSS/JS assets to fail loading"
+              fi
+              
               # Use rsync without --delete to preserve existing files
               # Important: Use trailing slash on source to copy contents, not the folder itself
               # And ensure destination path is explicit to avoid overwriting parent directories
               rsync -av \
                 private/karahanyuze-spotify/public/ ~/public_html/iwacu/
               echo "✅ Public files copied to public_html/iwacu (other domains preserved)"
+              
+              # Verify build directory was copied
+              if [ -d ~/public_html/iwacu/build ]; then
+                echo "✅ Build directory exists in public_html/iwacu"
+                echo "   Build files: $(find ~/public_html/iwacu/build -type f | wc -l)"
+              else
+                echo "❌ Build directory NOT found in public_html/iwacu after copy!"
+              fi
               
               # Ensure iwacu/.htaccess has secure standard Laravel rules
               echo "🔧 Ensuring iwacu/.htaccess has secure standard Laravel rules..."
