@@ -264,6 +264,7 @@ jobs:
                 '    # This prevents Apache from redirecting directories and exposing file paths' \
                 '' \
                 '    # Send Requests To Front Controller...' \
+                '    # Only process non-files and non-directories' \
                 '    RewriteCond %%{REQUEST_FILENAME} !-d' \
                 '    RewriteCond %%{REQUEST_FILENAME} !-f' \
                 '    RewriteRule ^ index.php [L]' \
@@ -644,6 +645,7 @@ jobs:
                 '    # This prevents Apache from redirecting directories and exposing file paths' \
                 '' \
                 '    # Send Requests To Front Controller...' \
+                '    # Only process non-files and non-directories' \
                 '    RewriteCond %%{REQUEST_FILENAME} !-d' \
                 '    RewriteCond %%{REQUEST_FILENAME} !-f' \
                 '    RewriteRule ^ index.php [L]' \
