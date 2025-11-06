@@ -195,8 +195,9 @@ jobs:
             # We only redirect karahanyuze.com to iwacu, other domains still use root
             echo "✅ Keeping old index.php in public_html for other domains"
             
-            # Update .htaccess in public_html to point to iwacu/index.php
-            echo "🔧 Updating .htaccess in public_html to point to iwacu..."
+            # Update .htaccess in public_html to exclude iwacu from Laravel rules
+            echo "🔧 Updating .htaccess in public_html to exclude iwacu..."
+            cd ~/public_html
             if [ -f ".htaccess" ]; then
               # Backup original
               cp .htaccess .htaccess.backup-$(date +%Y%m%d-%H%M%S) 2>/dev/null || cp .htaccess .htaccess.backup
@@ -207,9 +208,9 @@ jobs:
                 cp iwacu/.htaccess .htaccess
                 echo "✅ .htaccess updated from iwacu"
               else
-                # Fallback: update manually
+                # Fallback: update manually - exclude iwacu from Laravel rules
                 echo "📝 Updating .htaccess manually..."
-                sed -i "s|RewriteRule ^ index.php \[L\]|RewriteRule ^ iwacu/index.php [L]|g" .htaccess || true
+                sed -i 's|RewriteRule ^ index.php \[L\]|RewriteCond %{REQUEST_URI} !^/iwacu/\nRewriteRule ^ index.php [L]|g' .htaccess || true
                 echo "✅ .htaccess updated manually"
               fi
             else
@@ -496,8 +497,9 @@ jobs:
             # We only redirect karahanyuze.com to iwacu, other domains still use root
             echo "✅ Keeping old index.php in public_html for other domains"
             
-            # Update .htaccess in public_html to point to iwacu/index.php
-            echo "🔧 Updating .htaccess in public_html to point to iwacu..."
+            # Update .htaccess in public_html to exclude iwacu from Laravel rules
+            echo "🔧 Updating .htaccess in public_html to exclude iwacu..."
+            cd ~/public_html
             if [ -f ".htaccess" ]; then
               # Backup original
               cp .htaccess .htaccess.backup-$(date +%Y%m%d-%H%M%S) 2>/dev/null || cp .htaccess .htaccess.backup
@@ -508,9 +510,9 @@ jobs:
                 cp iwacu/.htaccess .htaccess
                 echo "✅ .htaccess updated from iwacu"
               else
-                # Fallback: update manually
+                # Fallback: update manually - exclude iwacu from Laravel rules
                 echo "📝 Updating .htaccess manually..."
-                sed -i "s|RewriteRule ^ index.php \[L\]|RewriteRule ^ iwacu/index.php [L]|g" .htaccess || true
+                sed -i 's|RewriteRule ^ index.php \[L\]|RewriteCond %{REQUEST_URI} !^/iwacu/\nRewriteRule ^ index.php [L]|g' .htaccess || true
                 echo "✅ .htaccess updated manually"
               fi
             else
