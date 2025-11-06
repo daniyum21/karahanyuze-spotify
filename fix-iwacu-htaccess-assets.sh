@@ -32,6 +32,13 @@ echo ""
 # 3. Create new .htaccess with proper asset access
 echo "📋 Step 3: Creating new .htaccess with proper asset access..."
 cat > .htaccess << 'HTACCESS_EOF'
+<IfModule mod_headers.c>
+    # Prevent browsers from caching redirects
+    Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+</IfModule>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
