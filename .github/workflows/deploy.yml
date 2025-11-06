@@ -216,20 +216,37 @@ jobs:
               echo "⚠️  Warning: .htaccess not found in public_html"
             fi
             
-            # Update index.php to point to private directory
-            echo "🔧 Updating index.php paths..."
+            # Update index.php in iwacu to point to karahanyuze-spotify
+            echo "🔧 Updating index.php in iwacu to point to karahanyuze-spotify..."
             cd ~/public_html/iwacu
             if [ -f "index.php" ]; then
               # Backup original
               cp index.php index.php.backup
               
-              # Update paths to point to private directory
+              # Update paths to point to private/karahanyuze-spotify directory
               sed -i "s|__DIR__.'/../vendor/autoload.php'|__DIR__.'/../../private/karahanyuze-spotify/vendor/autoload.php'|g" index.php
               sed -i "s|__DIR__.'/../bootstrap/app.php'|__DIR__.'/../../private/karahanyuze-spotify/bootstrap/app.php'|g" index.php
               
-              echo "✅ index.php updated"
+              echo "✅ iwacu/index.php updated to point to karahanyuze-spotify"
             else
-              echo "⚠️  Warning: index.php not found"
+              echo "⚠️  Warning: index.php not found in iwacu"
+            fi
+            
+            # Ensure public_html/index.php points to karahanyuze11 (old code)
+            echo "🔧 Ensuring public_html/index.php points to karahanyuze11..."
+            cd ~/public_html
+            if [ -f "index.php" ]; then
+              # Backup original
+              cp index.php index.php.backup-before-fix 2>/dev/null || true
+              
+              # Update paths to point to private/karahanyuze11 directory (old code)
+              sed -i "s|__DIR__.'/../vendor/autoload.php'|__DIR__.'/../private/karahanyuze11/vendor/autoload.php'|g" index.php
+              sed -i "s|__DIR__.'/../bootstrap/app.php'|__DIR__.'/../private/karahanyuze11/bootstrap/app.php'|g" index.php
+              sed -i "s|private/karahanyuze-spotify|private/karahanyuze11|g" index.php
+              
+              echo "✅ public_html/index.php updated to point to karahanyuze11"
+            else
+              echo "⚠️  Warning: index.php not found in public_html"
             fi
             
             # Set up environment
@@ -500,20 +517,37 @@ jobs:
               echo "⚠️  Warning: .htaccess not found in public_html"
             fi
             
-            # Update index.php to point to private directory
-            echo "🔧 Updating index.php paths..."
+            # Update index.php in iwacu to point to karahanyuze-spotify
+            echo "🔧 Updating index.php in iwacu to point to karahanyuze-spotify..."
             cd ~/public_html/iwacu
             if [ -f "index.php" ]; then
               # Backup original
               cp index.php index.php.backup
               
-              # Update paths to point to private directory
+              # Update paths to point to private/karahanyuze-spotify directory
               sed -i "s|__DIR__.'/../vendor/autoload.php'|__DIR__.'/../../private/karahanyuze-spotify/vendor/autoload.php'|g" index.php
               sed -i "s|__DIR__.'/../bootstrap/app.php'|__DIR__.'/../../private/karahanyuze-spotify/bootstrap/app.php'|g" index.php
               
-              echo "✅ index.php updated"
+              echo "✅ iwacu/index.php updated to point to karahanyuze-spotify"
             else
-              echo "⚠️  Warning: index.php not found"
+              echo "⚠️  Warning: index.php not found in iwacu"
+            fi
+            
+            # Ensure public_html/index.php points to karahanyuze11 (old code)
+            echo "🔧 Ensuring public_html/index.php points to karahanyuze11..."
+            cd ~/public_html
+            if [ -f "index.php" ]; then
+              # Backup original
+              cp index.php index.php.backup-before-fix 2>/dev/null || true
+              
+              # Update paths to point to private/karahanyuze11 directory (old code)
+              sed -i "s|__DIR__.'/../vendor/autoload.php'|__DIR__.'/../private/karahanyuze11/vendor/autoload.php'|g" index.php
+              sed -i "s|__DIR__.'/../bootstrap/app.php'|__DIR__.'/../private/karahanyuze11/bootstrap/app.php'|g" index.php
+              sed -i "s|private/karahanyuze-spotify|private/karahanyuze11|g" index.php
+              
+              echo "✅ public_html/index.php updated to point to karahanyuze11"
+            else
+              echo "⚠️  Warning: index.php not found in public_html"
             fi
             
             # Set up environment
