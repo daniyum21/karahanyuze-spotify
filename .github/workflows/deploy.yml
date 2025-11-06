@@ -181,11 +181,11 @@ jobs:
             echo "📂 Copying public files to public_html/iwacu (preserving other domains)..."
             mkdir -p public_html/iwacu
             if [ -d "private/karahanyuze-spotify/public" ]; then
-              # Use rsync without --delete and exclude other domain folders
+              # Use rsync without --delete to preserve existing files
+              # Important: Use trailing slash on source to copy contents, not the folder itself
+              # And ensure destination path is explicit to avoid overwriting parent directories
               rsync -av \
-                --exclude='indirimbo' \
-                --exclude='kinyarwanda' \
-                private/karahanyuze-spotify/public/ public_html/iwacu/
+                private/karahanyuze-spotify/public/ ~/public_html/iwacu/
               echo "✅ Public files copied to public_html/iwacu (other domains preserved)"
               
               # Ensure iwacu/.htaccess has secure standard Laravel rules
@@ -493,11 +493,11 @@ jobs:
             echo "📂 Copying public files to public_html/iwacu (preserving other domains)..."
             mkdir -p public_html/iwacu
             if [ -d "private/karahanyuze-spotify/public" ]; then
-              # Use rsync without --delete and exclude other domain folders
+              # Use rsync without --delete to preserve existing files
+              # Important: Use trailing slash on source to copy contents, not the folder itself
+              # And ensure destination path is explicit to avoid overwriting parent directories
               rsync -av \
-                --exclude='indirimbo' \
-                --exclude='kinyarwanda' \
-                private/karahanyuze-spotify/public/ public_html/iwacu/
+                private/karahanyuze-spotify/public/ ~/public_html/iwacu/
               echo "✅ Public files copied to public_html/iwacu (other domains preserved)"
               
               # Ensure iwacu/.htaccess has secure standard Laravel rules
