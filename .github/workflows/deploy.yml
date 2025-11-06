@@ -191,6 +191,21 @@ jobs:
               echo "⚠️  Warning: public folder not found in package"
             fi
             
+            # Update .htaccess in public_html to point to iwacu/index.php
+            echo "🔧 Updating .htaccess in public_html to point to iwacu..."
+            cd ~/public_html
+            if [ -f ".htaccess" ]; then
+              # Backup original
+              cp .htaccess .htaccess.backup
+              
+              # Update RewriteRule to point to iwacu/index.php
+              sed -i "s|RewriteRule ^ index.php \[L\]|RewriteRule ^ iwacu/index.php [L]|g" .htaccess
+              
+              echo "✅ .htaccess updated to point to iwacu/index.php"
+            else
+              echo "⚠️  Warning: .htaccess not found in public_html"
+            fi
+            
             # Update index.php to point to private directory
             echo "🔧 Updating index.php paths..."
             cd ~/public_html/iwacu
@@ -448,6 +463,21 @@ jobs:
               echo "✅ Public files copied to public_html/iwacu (other domains preserved)"
             else
               echo "⚠️  Warning: public folder not found in package"
+            fi
+            
+            # Update .htaccess in public_html to point to iwacu/index.php
+            echo "🔧 Updating .htaccess in public_html to point to iwacu..."
+            cd ~/public_html
+            if [ -f ".htaccess" ]; then
+              # Backup original
+              cp .htaccess .htaccess.backup
+              
+              # Update RewriteRule to point to iwacu/index.php
+              sed -i "s|RewriteRule ^ index.php \[L\]|RewriteRule ^ iwacu/index.php [L]|g" .htaccess
+              
+              echo "✅ .htaccess updated to point to iwacu/index.php"
+            else
+              echo "⚠️  Warning: .htaccess not found in public_html"
             fi
             
             # Update index.php to point to private directory
