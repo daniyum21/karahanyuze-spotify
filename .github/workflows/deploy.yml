@@ -199,6 +199,7 @@ jobs:
               # Important: Use trailing slash on source to copy contents, not the folder itself
               # And ensure destination path is explicit to avoid overwriting parent directories
               rsync -av \
+                --exclude='.htaccess' \
                 private/karahanyuze-spotify/public/ ~/public_html/iwacu/
               echo "✅ Public files copied to public_html/iwacu (other domains preserved)"
               
@@ -531,6 +532,7 @@ jobs:
               # Important: Use trailing slash on source to copy contents, not the folder itself
               # And ensure destination path is explicit to avoid overwriting parent directories
               rsync -av \
+                --exclude='.htaccess' \
                 private/karahanyuze-spotify/public/ ~/public_html/iwacu/
               echo "✅ Public files copied to public_html/iwacu (other domains preserved)"
               
