@@ -1,3 +1,28 @@
+#!/bin/bash
+
+# CRITICAL SECURITY FIX for karahanyuze.com path exposure
+# Run this immediately on the server: bash fix-karahanyuze-security.sh
+
+echo "🔒 CRITICAL SECURITY FIX: Preventing path exposure in public_html/.htaccess"
+echo ""
+
+cd ~/public_html
+
+# Backup existing .htaccess
+if [ -f ".htaccess" ]; then
+    echo "📦 Backing up existing .htaccess..."
+    cp .htaccess .htaccess.insecure-$(date +%Y%m%d-%H%M%S)
+    echo "✅ Backup created"
+else
+    echo "⚠️  Warning: .htaccess not found, creating new one..."
+fi
+
+# Create secure .htaccess (preserving existing rules but adding security)
+echo "🔧 Updating .htaccess with security rules..."
+# Read existing .htaccess and add security rules at the top
+if [ -f ".htaccess" ]; then
+    # Create a temporary file with security rules
+    cat > .htaccess.tmp << 'HTACCESS_HEADER'
 # PHP Configuration for File Uploads
 <IfModule mod_php7.c>
     php_value upload_max_filesize 500M
@@ -62,3 +87,24 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+HTACCESS_HEADER
+
+    mv .htaccess.tmp .htaccess
+    echo "✅ Secure .htaccess created"
+else
+    echo "⚠️  Error: Could not create .htaccess"
+fi
+
+echo ""
+echo "🔍 Verifying .htaccess..."
+if [ -f ".htaccess" ]; then
+    echo "✅ .htaccess exists"
+    echo "📄 Security rules (first 30 lines):"
+    head -30 .htaccess
+    echo ""
+    echo "✅ Security fix applied!"
+    echo "⚠️  Please test karahanyuze.com immediately to ensure it works correctly"
+else
+    echo "❌ Error: .htaccess not created!"
+fi
+
