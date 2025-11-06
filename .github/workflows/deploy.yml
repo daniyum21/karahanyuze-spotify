@@ -210,66 +210,17 @@ jobs:
                 echo "❌ Build directory NOT found in public_html/iwacu after copy!"
               fi
               
-              # Ensure iwacu/.htaccess has secure standard Laravel rules
-              echo "🔧 Ensuring iwacu/.htaccess has secure standard Laravel rules..."
+              # IMPORTANT: Do NOT overwrite .htaccess during deployment
+              # The .htaccess file is configured manually and should not be overwritten
+              # If .htaccess is missing, run: bash fix-iwacu-htaccess-assets.sh
+              echo "⚠️  Skipping .htaccess update (preserving existing configuration)"
+              echo "   If .htaccess is missing or broken, run: bash fix-iwacu-htaccess-assets.sh"
               cd ~/public_html/iwacu
-              # Backup existing .htaccess if it exists (may have security issues)
-              if [ -f ".htaccess" ]; then
-                cp .htaccess .htaccess.backup-$(date +%Y%m%d-%H%M%S) 2>/dev/null || true
+              if [ ! -f ".htaccess" ]; then
+                echo "⚠️  Warning: .htaccess not found! Run fix-iwacu-htaccess-assets.sh after deployment"
+              else
+                echo "✅ .htaccess exists (preserved)"
               fi
-              # Create secure standard Laravel .htaccess for iwacu subdirectory
-              # CRITICAL: Include DirectorySlash Off to prevent Apache directory redirects
-              printf '%s\n' \
-                '<IfModule mod_rewrite.c>' \
-                '    <IfModule mod_negotiation.c>' \
-                '        Options -MultiViews -Indexes' \
-                '    </IfModule>' \
-                '' \
-                '    RewriteEngine On' \
-                '' \
-                '    # CRITICAL: Disable directory redirects (prevents Apache from redirecting / to /iwacu/)' \
-                '    DirectorySlash Off' \
-                '' \
-                '    # Disable directory browsing' \
-                '    Options -Indexes' \
-                '' \
-                '    # IMPORTANT: Allow direct access to build directory and assets' \
-                '    # This must come BEFORE other rewrite rules' \
-                '    # Match both /build/ and build/ (for subdirectory)' \
-                '    RewriteCond %%{REQUEST_URI} ^/build/ [OR]' \
-                '    RewriteCond %%{REQUEST_URI} ^build/' \
-                '    RewriteRule ^ - [L]' \
-                '' \
-                '    # Allow direct access to static files (svg, png, jpg, jpeg, gif, ico, etc.)' \
-                '    RewriteCond %%{REQUEST_FILENAME} -f' \
-                '    RewriteCond %%{REQUEST_URI} \.(svg|png|jpg|jpeg|gif|ico|css|js|woff|woff2|ttf|eot)$ [NC]' \
-                '    RewriteRule ^ - [L]' \
-                '' \
-                '    # Prevent access to hidden files and parent directories' \
-                '    RewriteCond %%{REQUEST_URI} "\.\." [OR]' \
-                '    RewriteCond %%{REQUEST_URI} "\.\./" [OR]' \
-                '    RewriteCond %%{REQUEST_URI} "/home" [OR]' \
-                '    RewriteCond %%{REQUEST_URI} "/private"' \
-                '    RewriteRule .* - [F,L]' \
-                '' \
-                '    # Handle Authorization Header' \
-                '    RewriteCond %%{HTTP:Authorization} .' \
-                '    RewriteRule .* - [E=HTTP_AUTHORIZATION:%%{HTTP:Authorization}]' \
-                '' \
-                '    # Handle X-XSRF-Token Header' \
-                '    RewriteCond %%{HTTP:x-xsrf-token} .' \
-                '    RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%%{HTTP:X-XSRF-Token}]' \
-                '' \
-                '    # IMPORTANT: Do not redirect trailing slashes - let Laravel handle it' \
-                '    # This prevents Apache from redirecting directories and exposing file paths' \
-                '' \
-                '    # Send Requests To Front Controller...' \
-                '    # Only process non-files and non-directories' \
-                '    RewriteCond %%{REQUEST_FILENAME} !-d' \
-                '    RewriteCond %%{REQUEST_FILENAME} !-f' \
-                '    RewriteRule ^ index.php [L]' \
-                '</IfModule>' > .htaccess
-              echo "✅ iwacu/.htaccess updated with secure standard Laravel rules"
             else
               echo "⚠️  Warning: public folder not found in package"
             fi
@@ -591,66 +542,17 @@ jobs:
                 echo "❌ Build directory NOT found in public_html/iwacu after copy!"
               fi
               
-              # Ensure iwacu/.htaccess has secure standard Laravel rules
-              echo "🔧 Ensuring iwacu/.htaccess has secure standard Laravel rules..."
+              # IMPORTANT: Do NOT overwrite .htaccess during deployment
+              # The .htaccess file is configured manually and should not be overwritten
+              # If .htaccess is missing, run: bash fix-iwacu-htaccess-assets.sh
+              echo "⚠️  Skipping .htaccess update (preserving existing configuration)"
+              echo "   If .htaccess is missing or broken, run: bash fix-iwacu-htaccess-assets.sh"
               cd ~/public_html/iwacu
-              # Backup existing .htaccess if it exists (may have security issues)
-              if [ -f ".htaccess" ]; then
-                cp .htaccess .htaccess.backup-$(date +%Y%m%d-%H%M%S) 2>/dev/null || true
+              if [ ! -f ".htaccess" ]; then
+                echo "⚠️  Warning: .htaccess not found! Run fix-iwacu-htaccess-assets.sh after deployment"
+              else
+                echo "✅ .htaccess exists (preserved)"
               fi
-              # Create secure standard Laravel .htaccess for iwacu subdirectory
-              # CRITICAL: Include DirectorySlash Off to prevent Apache directory redirects
-              printf '%s\n' \
-                '<IfModule mod_rewrite.c>' \
-                '    <IfModule mod_negotiation.c>' \
-                '        Options -MultiViews -Indexes' \
-                '    </IfModule>' \
-                '' \
-                '    RewriteEngine On' \
-                '' \
-                '    # CRITICAL: Disable directory redirects (prevents Apache from redirecting / to /iwacu/)' \
-                '    DirectorySlash Off' \
-                '' \
-                '    # Disable directory browsing' \
-                '    Options -Indexes' \
-                '' \
-                '    # IMPORTANT: Allow direct access to build directory and assets' \
-                '    # This must come BEFORE other rewrite rules' \
-                '    # Match both /build/ and build/ (for subdirectory)' \
-                '    RewriteCond %%{REQUEST_URI} ^/build/ [OR]' \
-                '    RewriteCond %%{REQUEST_URI} ^build/' \
-                '    RewriteRule ^ - [L]' \
-                '' \
-                '    # Allow direct access to static files (svg, png, jpg, jpeg, gif, ico, etc.)' \
-                '    RewriteCond %%{REQUEST_FILENAME} -f' \
-                '    RewriteCond %%{REQUEST_URI} \.(svg|png|jpg|jpeg|gif|ico|css|js|woff|woff2|ttf|eot)$ [NC]' \
-                '    RewriteRule ^ - [L]' \
-                '' \
-                '    # Prevent access to hidden files and parent directories' \
-                '    RewriteCond %%{REQUEST_URI} "\.\." [OR]' \
-                '    RewriteCond %%{REQUEST_URI} "\.\./" [OR]' \
-                '    RewriteCond %%{REQUEST_URI} "/home" [OR]' \
-                '    RewriteCond %%{REQUEST_URI} "/private"' \
-                '    RewriteRule .* - [F,L]' \
-                '' \
-                '    # Handle Authorization Header' \
-                '    RewriteCond %%{HTTP:Authorization} .' \
-                '    RewriteRule .* - [E=HTTP_AUTHORIZATION:%%{HTTP:Authorization}]' \
-                '' \
-                '    # Handle X-XSRF-Token Header' \
-                '    RewriteCond %%{HTTP:x-xsrf-token} .' \
-                '    RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%%{HTTP:X-XSRF-Token}]' \
-                '' \
-                '    # IMPORTANT: Do not redirect trailing slashes - let Laravel handle it' \
-                '    # This prevents Apache from redirecting directories and exposing file paths' \
-                '' \
-                '    # Send Requests To Front Controller...' \
-                '    # Only process non-files and non-directories' \
-                '    RewriteCond %%{REQUEST_FILENAME} !-d' \
-                '    RewriteCond %%{REQUEST_FILENAME} !-f' \
-                '    RewriteRule ^ index.php [L]' \
-                '</IfModule>' > .htaccess
-              echo "✅ iwacu/.htaccess updated with secure standard Laravel rules"
             else
               echo "⚠️  Warning: public folder not found in package"
             fi
