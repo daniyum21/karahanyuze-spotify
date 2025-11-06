@@ -196,6 +196,7 @@ jobs:
                 cp .htaccess .htaccess.backup-$(date +%Y%m%d-%H%M%S) 2>/dev/null || true
               fi
               # Create secure standard Laravel .htaccess for iwacu subdirectory
+              # CRITICAL: Include DirectorySlash Off to prevent Apache directory redirects
               printf '%s\n' \
                 '<IfModule mod_rewrite.c>' \
                 '    <IfModule mod_negotiation.c>' \
@@ -203,6 +204,9 @@ jobs:
                 '    </IfModule>' \
                 '' \
                 '    RewriteEngine On' \
+                '' \
+                '    # CRITICAL: Disable directory redirects (prevents Apache from redirecting / to /iwacu/)' \
+                '    DirectorySlash Off' \
                 '' \
                 '    # Disable directory browsing' \
                 '    Options -Indexes' \
@@ -222,10 +226,8 @@ jobs:
                 '    RewriteCond %%{HTTP:x-xsrf-token} .' \
                 '    RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%%{HTTP:X-XSRF-Token}]' \
                 '' \
-                '    # Redirect Trailing Slashes If Not A Folder...' \
-                '    RewriteCond %%{REQUEST_FILENAME} !-d' \
-                '    RewriteCond %%{REQUEST_URI} (.+)/$' \
-                '    RewriteRule ^ %%1 [L,R=301]' \
+                '    # IMPORTANT: Don\'t redirect trailing slashes - let Laravel handle it' \
+                '    # This prevents Apache from redirecting directories and exposing file paths' \
                 '' \
                 '    # Send Requests To Front Controller...' \
                 '    RewriteCond %%{REQUEST_FILENAME} !-d' \
@@ -545,6 +547,7 @@ jobs:
                 cp .htaccess .htaccess.backup-$(date +%Y%m%d-%H%M%S) 2>/dev/null || true
               fi
               # Create secure standard Laravel .htaccess for iwacu subdirectory
+              # CRITICAL: Include DirectorySlash Off to prevent Apache directory redirects
               printf '%s\n' \
                 '<IfModule mod_rewrite.c>' \
                 '    <IfModule mod_negotiation.c>' \
@@ -552,6 +555,9 @@ jobs:
                 '    </IfModule>' \
                 '' \
                 '    RewriteEngine On' \
+                '' \
+                '    # CRITICAL: Disable directory redirects (prevents Apache from redirecting / to /iwacu/)' \
+                '    DirectorySlash Off' \
                 '' \
                 '    # Disable directory browsing' \
                 '    Options -Indexes' \
@@ -571,10 +577,8 @@ jobs:
                 '    RewriteCond %%{HTTP:x-xsrf-token} .' \
                 '    RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%%{HTTP:X-XSRF-Token}]' \
                 '' \
-                '    # Redirect Trailing Slashes If Not A Folder...' \
-                '    RewriteCond %%{REQUEST_FILENAME} !-d' \
-                '    RewriteCond %%{REQUEST_URI} (.+)/$' \
-                '    RewriteRule ^ %%1 [L,R=301]' \
+                '    # IMPORTANT: Don\'t redirect trailing slashes - let Laravel handle it' \
+                '    # This prevents Apache from redirecting directories and exposing file paths' \
                 '' \
                 '    # Send Requests To Front Controller...' \
                 '    RewriteCond %%{REQUEST_FILENAME} !-d' \
