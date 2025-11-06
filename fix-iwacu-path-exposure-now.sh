@@ -75,9 +75,20 @@ echo "🧹 Clearing storage framework cache..."
 rm -rf storage/framework/cache/* 2>/dev/null || true
 rm -rf storage/framework/views/* 2>/dev/null || true
 
-# 5. Rebuild config cache with correct APP_URL
+# 5. Verify APP_URL is correct before caching
 echo ""
-echo "📋 Step 5: Rebuilding config cache..."
+echo "📋 Step 5: Verifying APP_URL before caching..."
+APP_URL_VERIFY=$(grep "^APP_URL=" .env | cut -d '=' -f2- | tr -d ' ' | tr -d '"' | tr -d "'")
+if [[ "$APP_URL_VERIFY" != "https://iwacu.org" ]]; then
+    echo "❌ APP_URL is still wrong: $APP_URL_VERIFY"
+    echo "🔧 Forcing APP_URL to https://iwacu.org..."
+    sed -i "s|^APP_URL=.*|APP_URL=https://iwacu.org|g" .env
+    echo "✅ APP_URL forced to https://iwacu.org"
+fi
+
+# Rebuild config cache with correct APP_URL
+echo ""
+echo "📋 Step 6: Rebuilding config cache..."
 php artisan config:cache 2>&1 || echo "⚠️  Config cache failed (might be okay)"
 
 # 6. Verify the fix
