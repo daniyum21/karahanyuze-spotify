@@ -274,6 +274,35 @@ jobs:
             if [ -f .env ]; then
               echo "✅ Using existing .env file"
               
+              # CRITICAL: Fix APP_URL if it contains file system paths
+              if grep -q "^APP_URL=" .env; then
+                APP_URL_VALUE=$(grep "^APP_URL=" .env | cut -d '=' -f2- | tr -d ' ' | tr -d '"' | tr -d "'")
+                if [[ "$APP_URL_VALUE" == *"/home"* ]] || [[ "$APP_URL_VALUE" == *"public_html"* ]] || [[ "$APP_URL_VALUE" != *"iwacu.org"* ]]; then
+                  echo "❌ APP_URL is incorrect: $APP_URL_VALUE"
+                  echo "🔧 Fixing APP_URL to https://iwacu.org..."
+                  sed -i "s|^APP_URL=.*|APP_URL=https://iwacu.org|g" .env
+                  echo "✅ APP_URL fixed to https://iwacu.org"
+                else
+                  echo "✅ APP_URL looks correct: $APP_URL_VALUE"
+                fi
+              else
+                echo "⚠️  APP_URL not set, adding..."
+                echo "" >> .env
+                echo "APP_URL=https://iwacu.org" >> .env
+                echo "✅ APP_URL added"
+              fi
+              
+              # Remove incorrect ASSET_URL if it exists
+              if grep -q "^ASSET_URL=" .env; then
+                ASSET_URL_VALUE=$(grep "^ASSET_URL=" .env | cut -d '=' -f2- | tr -d ' ' | tr -d '"' | tr -d "'")
+                if [[ "$ASSET_URL_VALUE" == *"/home"* ]] || [[ "$ASSET_URL_VALUE" == *"public_html"* ]]; then
+                  echo "❌ ASSET_URL is incorrect: $ASSET_URL_VALUE"
+                  echo "🔧 Removing incorrect ASSET_URL..."
+                  sed -i "/^ASSET_URL=/d" .env
+                  echo "✅ ASSET_URL removed (will use APP_URL)"
+                fi
+              fi
+              
               # Ensure DB_CONNECTION is set to mysql (not sqlite)
               if ! grep -q "^DB_CONNECTION=" .env; then
                 echo "🔧 Setting DB_CONNECTION to mysql..."
