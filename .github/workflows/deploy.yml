@@ -371,6 +371,11 @@ jobs:
               echo "⚠️  Storage directory exists as regular folder, not creating link"
             fi
             
+            # Final cache clear to ensure fresh views are served
+            echo "🧹 Final cache clear..."
+            php artisan view:clear || true
+            php artisan cache:clear || true
+            
             # Clean up
             rm -f ~/deploy-package.tar.gz
             
@@ -383,6 +388,7 @@ jobs:
             echo "   2. Verify .env file has correct production settings"
             echo "   3. Check file permissions (storage and bootstrap/cache should be writable)"
             echo "   4. Other domain folders (indirimbo, kinyarwanda) have been preserved"
+            echo "   5. Clear browser cache (Cmd+Shift+R or Ctrl+Shift+R) to see new styles"
             
       - name: ⏳ Wait 10 seconds before SSH retry
         if: steps.ssh-deploy.outcome == 'failure'
@@ -490,7 +496,8 @@ jobs:
             echo "⚡ Running optimizations..."
             php artisan config:cache || echo "⚠️  Config cache failed"
             php artisan route:cache || echo "⚠️  Route cache failed"
-            php artisan view:cache || echo "⚠️  View cache failed"
+            # Don't cache views - they change frequently and caching can cause issues
+            php artisan view:clear || echo "⚠️  View clear failed"
             
             # Create storage link
             cd ~/public_html/iwacu
