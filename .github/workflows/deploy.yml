@@ -269,19 +269,27 @@ jobs:
             php artisan cache:clear || true
             php artisan view:clear || true
             php artisan route:clear || true
+            # Remove cached config files (they may contain old APP_URL)
+            rm -f bootstrap/cache/config.php 2>/dev/null || true
+            rm -rf storage/framework/cache/* 2>/dev/null || true
             
             # Preserve existing .env file
             if [ -f .env ]; then
               echo "✅ Using existing .env file"
               
               # CRITICAL: Fix APP_URL if it contains file system paths
+              # This MUST be fixed before any config caching
               if grep -q "^APP_URL=" .env; then
                 APP_URL_VALUE=$(grep "^APP_URL=" .env | cut -d '=' -f2- | tr -d ' ' | tr -d '"' | tr -d "'")
-                if [[ "$APP_URL_VALUE" == *"/home"* ]] || [[ "$APP_URL_VALUE" == *"public_html"* ]] || [[ "$APP_URL_VALUE" != *"iwacu.org"* ]]; then
-                  echo "❌ APP_URL is incorrect: $APP_URL_VALUE"
+                echo "📄 Current APP_URL: $APP_URL_VALUE"
+                # Fix if it contains ANY file system paths or doesn't contain the domain
+                if [[ "$APP_URL_VALUE" == *"/home"* ]] || [[ "$APP_URL_VALUE" == *"public_html"* ]] || [[ "$APP_URL_VALUE" == *"/"* && "$APP_URL_VALUE" != *"://"* ]] || [[ "$APP_URL_VALUE" != *"iwacu.org"* ]]; then
+                  echo "❌ APP_URL is incorrect (contains path or wrong domain): $APP_URL_VALUE"
                   echo "🔧 Fixing APP_URL to https://iwacu.org..."
                   sed -i "s|^APP_URL=.*|APP_URL=https://iwacu.org|g" .env
                   echo "✅ APP_URL fixed to https://iwacu.org"
+                  # Remove cached config to force regeneration
+                  rm -f bootstrap/cache/config.php 2>/dev/null || true
                 else
                   echo "✅ APP_URL looks correct: $APP_URL_VALUE"
                 fi
@@ -295,7 +303,7 @@ jobs:
               # Remove incorrect ASSET_URL if it exists
               if grep -q "^ASSET_URL=" .env; then
                 ASSET_URL_VALUE=$(grep "^ASSET_URL=" .env | cut -d '=' -f2- | tr -d ' ' | tr -d '"' | tr -d "'")
-                if [[ "$ASSET_URL_VALUE" == *"/home"* ]] || [[ "$ASSET_URL_VALUE" == *"public_html"* ]]; then
+                if [[ "$ASSET_URL_VALUE" == *"/home"* ]] || [[ "$ASSET_URL_VALUE" == *"public_html"* ]] || [[ "$ASSET_URL_VALUE" == *"/"* && "$ASSET_URL_VALUE" != *"://"* ]]; then
                   echo "❌ ASSET_URL is incorrect: $ASSET_URL_VALUE"
                   echo "🔧 Removing incorrect ASSET_URL..."
                   sed -i "/^ASSET_URL=/d" .env
