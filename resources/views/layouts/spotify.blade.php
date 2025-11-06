@@ -67,7 +67,24 @@
     </script>
     @endif
     
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @if(app()->environment('production'))
+        @php
+            $manifestPath = public_path('build/manifest.json');
+            $manifest = file_exists($manifestPath) ? json_decode(file_get_contents($manifestPath), true) : null;
+        @endphp
+        @if($manifest)
+            @if(isset($manifest['resources/css/app.css']['file']))
+                <link rel="stylesheet" href="{{ asset('build/' . $manifest['resources/css/app.css']['file']) }}">
+            @endif
+            @if(isset($manifest['resources/js/app.js']['file']))
+                <script type="module" src="{{ asset('build/' . $manifest['resources/js/app.js']['file']) }}"></script>
+            @endif
+        @else
+            @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @endif
+    @else
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @endif
 </head>
 <body class="bg-black text-white min-h-screen">
     <!-- Global Error Message Notification -->
