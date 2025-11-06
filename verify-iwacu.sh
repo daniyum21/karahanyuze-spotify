@@ -12,6 +12,52 @@ if [ -f ~/public_html/iwacu/.htaccess ]; then
     echo "✅ .htaccess exists"
     echo "📄 First 10 lines of .htaccess:"
     head -10 ~/public_html/iwacu/.htaccess
+    
+    # Check for security issues - look for RewriteRule that might expose paths
+    if grep -q "RewriteRule.*%25" ~/public_html/iwacu/.htaccess || grep -q "RewriteRule.*public_html" ~/public_html/iwacu/.htaccess; then
+        echo "⚠️  WARNING: .htaccess may have security issues!"
+        echo "🔧 Recreating secure .htaccess..."
+        cd ~/public_html/iwacu
+        cp .htaccess .htaccess.insecure-$(date +%Y%m%d-%H%M%S)
+        
+        # Create secure .htaccess
+        cat > .htaccess << 'HTACCESS_EOF'
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # Disable directory browsing
+    Options -Indexes
+
+    # Prevent access to hidden files
+    RewriteCond %{SCRIPT_FILENAME} -d [OR]
+    RewriteCond %{SCRIPT_FILENAME} -f
+    RewriteRule "(^|/)\." - [F]
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Handle X-XSRF-Token Header
+    RewriteCond %{HTTP:x-xsrf-token} .
+    RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
+
+    # Redirect Trailing Slashes If Not A Folder...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Send Requests To Front Controller...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
+HTACCESS_EOF
+        echo "✅ Secure .htaccess recreated"
+    fi
 else
     echo "❌ .htaccess not found!"
 fi
